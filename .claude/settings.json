@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Windows/Fonts/**)",
+      "Bash(python make_pdf_multilang.py)",
+      "Bash(python -c \":*)",
+      "WebFetch(domain:script.google.com)",
+      "WebFetch(domain:script.googleusercontent.com)",
+      "Bash(start \"\" \"c:\\\\Users\\\\admin\\\\Desktop\\\\work\\\\TBM\\\\신규채용자_안전교육일지.html\")",
+      "Bash(python _gen_label.py)",
+      "Bash(python _gen_label2.py)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(pdftotext -l 3 $f -)",
+      "Bash(done)",
+      "Bash(gh auth:*)",
+      "Bash(where git:*)",
+      "Bash(git --version)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\admin\\.claude\\projects\\c--Users-admin-Desktop-work"
+    ]
+  }
+}

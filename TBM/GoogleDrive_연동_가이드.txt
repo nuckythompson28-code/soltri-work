@@ -1,0 +1,91 @@
+═══════════════════════════════════════════════════
+  Google Drive 자동 저장 설정 가이드
+═══════════════════════════════════════════════════
+
+【1단계】 Google Apps Script 생성
+─────────────────────────────────
+1. 브라우저에서 https://script.google.com 접속 (Google 로그인)
+2. [새 프로젝트] 클릭
+3. 기본 코드(myFunction) 전부 지우고, 아래 코드를 복사-붙여넣기:
+
+──── 여기서부터 복사 ────
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var folderName = data.folder || 'TBM_문서';
+    var fileName = data.fileName;
+    var fileData = data.fileData; // base64
+
+    // 폴더 찾기 또는 생성
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+    // 하위 폴더 (날짜별)
+    if (data.subFolder) {
+      var subs = folder.getFoldersByName(data.subFolder);
+      folder = subs.hasNext() ? subs.next() : folder.createFolder(data.subFolder);
+    }
+
+    // Base64 → Blob → 파일 저장
+    var blob = Utilities.newBlob(
+      Utilities.base64Decode(fileData),
+      'application/pdf',
+      fileName
+    );
+
+    // 같은 이름 파일 있으면 삭제 (덮어쓰기)
+    var existing = folder.getFilesByName(fileName);
+    while (existing.hasNext()) {
+      existing.next().setTrashed(true);
+    }
+
+    var file = folder.createFile(blob);
+
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: true, fileId: file.getId(), url: file.getUrl() })
+    ).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: false, error: err.toString() })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+──── 여기까지 복사 ────
+
+
+【2단계】 웹 앱으로 배포
+─────────────────────────
+1. 우측 상단 [배포] → [새 배포]
+2. 유형 선택: ⚙ 톱니바퀴 → [웹 앱]
+3. 설정:
+   - 설명: TBM 드라이브 저장
+   - 다음 사용자 인증정보로 실행: 나
+   - 액세스 권한: 모든 사용자
+4. [배포] 클릭 → 권한 승인 (Google 계정 허용)
+5. 웹 앱 URL 복사! (https://script.google.com/macros/s/xxxxx/exec)
+
+
+【3단계】 HTML 파일에 URL 입력
+──────────────────────────────
+1. TBM_일지.html 파일 열기
+2. 맨 위쪽에 DRIVE_SCRIPT_URL 찾기
+3. 복사한 URL을 붙여넣기
+
+   변경 전: const DRIVE_SCRIPT_URL = '';
+   변경 후: const DRIVE_SCRIPT_URL = 'https://script.google.com/macros/s/xxxxx/exec';
+
+4. 신규채용자_안전교육일지.html에도 동일하게 URL 붙여넣기
+
+
+【결과】
+───────
+- PDF 내보내기 시 → 폰 다운로드 + Google Drive 자동 업로드
+- Google Drive에 "TBM_문서" 폴더 자동 생성
+  └ 날짜별 하위폴더 (예: 2026-03-16)
+    └ TBM_성형실1번_2026-03-16.pdf
+- 안전교육일지는 "안전교육_문서" 폴더에 저장
+
+※ URL을 입력하지 않으면 기존처럼 폰 다운로드만 됩니다.

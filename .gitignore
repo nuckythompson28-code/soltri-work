@@ -1,0 +1,19 @@
+.env
+credentials.json
+token.json
+.tmp/
+__pycache__/
+*.pyc
+desktop.ini
+sync_to_gdrive.bat
+sync_to_gdrive.log
+
+# 보안 파일
+CNC_ANAL/soltri_config.json
+자동화/배출/config.json
+자동화/배출/폐수배출시설/water_config.json
+
+# 개별 repo로 관리
+warehouse/
+clothing/
+kit60g-calc/

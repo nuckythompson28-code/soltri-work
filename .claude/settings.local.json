@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/admin/Desktop/work -type f -name *.html)",
+      "Bash(python3 -:*)",
+      "Bash(python3 add_monthly.py)",
+      "Bash(du -sh \"/c/Users/admin/Desktop/work\"/*)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files/Google/Drive File Stream/**)",
+      "Read(//c/Program Files/Google/**)",
+      "Read(//g//**)",
+      "Read(//c/Users/admin/**)",
+      "Read(//g/내 드라이브//**)",
+      "Bash(cmd.exe /c \"C:\\\\Users\\\\admin\\\\Desktop\\\\work\\\\sync_to_gdrive.bat\")",
+      "Bash(robocopy \"C:\\\\Users\\\\admin\\\\Desktop\\\\work\" \"G:\\\\내 드라이브\\\\work\" /MIR /XA:SH /R:3 /W:5 /MT:8 /NP /XF \"sync_to_gdrive.bat\" /XF \"sync_to_gdrive.log\" /XF \"desktop.ini\" /XF \"*.tmp\" /XD \".git\" /XD \"__pycache__\" /XD \"node_modules\" /XD \".claude\")"
+    ]
+  }
+}

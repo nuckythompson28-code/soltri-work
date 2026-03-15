@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SOLTRI 안전보건교육일지</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ★ Google Drive 연동 - 아래 URL에 Apps Script 웹앱 URL을 붙여넣으세요
+const DRIVE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfE9A9laYeK3CLoGDeitOoFKjGVWQ1_BiXwMLq1Q_ttKB7YazICvC8x6GcdHChQBg/exec';
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0c11;--s1:#111520;--s2:#181d2a;--s3:#212736;--bdr:#262c3e;--acc:#3f7de8;--acc2:#5e9bff;--grn:#1fbc8e;--red:#e85454;--org:#e8a034;--pur:#9676e8;--cyan:#38bdf8;--txt:#dce0eb;--tx2:#848da5;--tx3:#4f576d;--r:12px}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--txt);min-height:100dvh;-webkit-tap-highlight-color:transparent;overflow-x:hidden;padding-bottom:80px}
+  .hdr{background:linear-gradient(160deg,#1a2340 0%,var(--bg) 100%);padding:16px 14px 12px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:50}
+  .hdr h1{font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--acc2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hdr p{font-size:10px;color:var(--tx2);margin-top:1px}
+  .hdr-r{display:flex;justify-content:space-between;align-items:center}
+  .cd{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);margin:10px 10px;overflow:hidden}
+  .ch{padding:11px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:6px}
+  .cb{padding:12px 14px}
+  .fg{margin-bottom:12px}.fl{display:block;font-size:10px;color:var(--tx2);margin-bottom:4px;font-weight:500}
+  .fi,.fs{width:100%;padding:9px 11px;background:var(--s2);border:1px solid var(--bdr);border-radius:9px;color:var(--txt);font-size:12px;font-family:inherit;outline:none}
+  .fi:focus,.fs:focus{border-color:var(--acc)}
+  .fs{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23848da5' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+  textarea.fi{min-height:60px;resize:vertical;line-height:1.5}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:600;font-family:inherit;border:none;cursor:pointer;width:100%}
+  .btn:active{transform:scale(.97)}
+  .bp{background:var(--acc);color:#fff}.bgr{background:var(--grn);color:#fff}.bo{background:transparent;border:1px solid var(--bdr);color:var(--tx2)}.bs{padding:6px 10px;font-size:11px;width:auto}
+  .bred{background:var(--red);color:#fff}
+  .badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600}
+  .b-g{background:rgba(31,188,142,.1);color:var(--grn)}.b-b{background:rgba(63,125,232,.1);color:var(--acc2)}.b-o{background:rgba(232,160,52,.1);color:var(--org)}.b-r{background:rgba(232,84,84,.1);color:var(--red)}.b-c{background:rgba(56,189,248,.1);color:var(--cyan)}
+  .tabs{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{padding:6px 12px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--tx2);font-size:11px;font-family:inherit;white-space:nowrap;cursor:pointer;transition:.15s}
+  .tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+
+  /* Curriculum */
+  .cur-sec{margin-bottom:10px}
+  .cur-title{font-size:10.5px;font-weight:600;color:var(--acc2);padding:8px 0 5px;border-bottom:1px solid var(--bdr)}
+  .cur-item{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid rgba(38,44,62,.5);font-size:11px;cursor:pointer;line-height:1.4}
+  .cur-item:last-child{border-bottom:none}
+  .cur-item:active{opacity:.7}
+  .ck-box{width:20px;height:20px;border:2px solid var(--bdr);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-size:12px}
+  .cur-item.checked .ck-box{background:var(--grn);border-color:var(--grn);color:#fff}
+  .cur-hours{margin-left:auto;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;white-space:nowrap;flex-shrink:0}
+
+  /* Sig */
+  .sig-wrap{background:#fff;border-radius:9px;position:relative;margin:6px 0;touch-action:none}
+  .sig-canvas{width:100%;height:130px;border-radius:9px;touch-action:none;display:block}
+  .sig-ph{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#bbb;font-size:12px;pointer-events:none}
+  .sig-clr{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:9px;cursor:pointer;font-family:inherit}
+
+  /* History */
+  .hist-card{background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .hist-card:active{opacity:.8}
+  .hist-top{display:flex;justify-content:space-between;align-items:center}
+  .hist-name{font-size:12px;font-weight:600}
+  .hist-date{font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace}
+  .hist-info{font-size:10px;color:var(--tx2);margin-top:3px}
+  .hist-acts{display:flex;gap:6px;margin-top:6px}
+
+  .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:9px;font-size:11px;font-weight:600;z-index:300;display:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+  .toast.show{display:block;animation:fi .2s}
+  @keyframes fi{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .empty{text-align:center;padding:24px 14px;color:var(--tx3);font-size:12px}
+  .nav{position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--bdr);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,8px)}
+  .nb{flex:1;padding:10px 2px 6px;text-align:center;background:none;border:none;color:var(--tx3);font-size:9px;font-family:inherit;cursor:pointer}
+  .nb.on{color:var(--acc2)}.nb svg{display:block;margin:0 auto 2px;width:20px;height:20px}
+  .pg{display:none;padding:0 0 70px}.pg.on{display:block}
+
+  /* Info banner */
+  .info-banner{background:linear-gradient(135deg,rgba(63,125,232,.1),rgba(56,189,248,.05));border:1px solid rgba(63,125,232,.2);border-radius:8px;padding:12px 14px;margin:10px 10px;font-size:10.5px;color:var(--acc2);line-height:1.6}
+  .info-banner strong{color:var(--txt)}
+
+  /* Hour summary */
+  .hour-bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-top:4px}
+  .hour-fill{height:100%;background:var(--grn);border-radius:3px;transition:.3s}
+  .hour-summary{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:10px;color:var(--tx2)}
+
+  /* Employee rows */
+  .emp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+  .emp-row:last-child{border-bottom:none}
+  .emp-row:active{background:var(--s2);border-radius:8px}
+  .emp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:rgba(63,125,232,.15);color:var(--acc2)}
+  .emp-info{flex:1}
+  .emp-nm{font-size:12px;font-weight:600}
+  .emp-dept{font-size:10px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nb on" id="nav0" onclick="goPage(0)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    신규 작성
+  </button>
+  <button class="nb" id="nav1" onclick="goPage(1)">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    교육 이력
+  </button>
+</div>
+
+<!-- PAGE 0: 신규 작성 -->
+<div class="pg on" id="pg0">
+  <div class="hdr">
+    <div class="hdr-r">
+      <div>
+        <h1 id="pageTitle">안전보건교육일지</h1>
+        <p>(주)쏠트리 SOLTRI</p>
+      </div>
+      <button class="btn bs bo" onclick="resetForm()">초기화</button>
+    </div>
+  </div>
+
+  <!-- 교육 유형 선택 -->
+  <div style="padding:8px 10px">
+    <select class="fs" id="eduType" onchange="changeEduType(this.value)" style="font-size:13px;font-weight:600;padding:11px 14px;background:var(--s1);border-color:var(--acc);color:var(--acc2)">
+      <option value="new_hire">신규채용자 안전보건교육</option>
+      <option value="special">특별안전보건교육 (유해·위험작업)</option>
+      <option value="regular">정기 안전보건교육</option>
+      <option value="supervisor">관리감독자 안전보건교육</option>
+      <option value="change">작업내용 변경 시 교육</option>
+    </select>
+  </div>
+
+  <div class="info-banner" id="infoBanner">
+    <strong>산업안전보건법 제29조</strong>에 따라 신규 채용 시 <strong>8시간 이상</strong>의 안전보건교육을 실시해야 합니다.
+  </div>
+
+  <!-- 교육 기본정보 -->
+  <div class="cd"><div class="ch">교육 기본정보</div><div class="cb">
+    <div class="row2">
+      <div class="fg"><label class="fl">교육일자</label><input type="date" class="fi" id="eduDate"></div>
+      <div class="fg"><label class="fl">교육장소</label>
+        <select class="fs" id="eduPlace">
+          <option value="회의실">회의실</option>
+          <option value="교육실">교육실</option>
+          <option value="현장">현장</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label class="fl">교육시간</label>
+        <select class="fs" id="eduHours"></select>
+      </div>
+      <div class="fg"><label class="fl">교육강사</label>
+        <select class="fs" id="eduInstructor" onchange="updateInstructorInfo()">
+          <option value="">선택</option>
+          <option value="김한별">김한별 (산업안전기사)</option>
+          <option value="마길남">마길남 (관리감독자)</option>
+        </select>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- 피교육자 정보 -->
+  <div class="cd"><div class="ch" id="traineeHeader">피교육자 정보<button class="btn bs bp" style="margin-left:auto" onclick="addTrainee()">+ 추가</button></div>
+    <div class="cb" id="traineeArea">
+      <div class="empty">피교육자를 추가하세요</div>
+    </div>
+  </div>
+
+  <!-- 교육내용 (법정 교육과정) -->
+  <div class="cd"><div class="ch" id="curHeader">교육내용 (법정 교육과정)<button class="btn bs bo" style="margin-left:auto" onclick="checkAllCur()">전체 체크</button></div>
+    <div class="cb" id="curArea"></div>
+    <div style="padding:0 12px 10px">
+      <div class="hour-summary">
+        <span>이수시간</span>
+        <span id="hourText">0 / 8시간</span>
+      </div>
+      <div class="hour-bar"><div class="hour-fill" id="hourFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- 특이사항 -->
+  <div class="cd"><div class="ch">특이사항 / 비고</div><div class="cb">
+    <textarea class="fi" id="remarks" placeholder="교육 중 특이사항, 추가 교육 필요 사항 등"></textarea>
+  </div></div>
+
+  <!-- 서명 -->
+  <div class="cd"><div class="ch">교육강사 서명</div><div class="cb">
+    <div class="sig-wrap">
+      <canvas class="sig-canvas" id="instrSigCanvas"></canvas>
+      <span class="sig-ph" id="instrSigPh">교육강사 서명</span>
+      <button class="sig-clr" onclick="clearSig('instr')">지우기</button>
+    </div>
+  </div></div>
+
+  <div style="padding:0 10px 8px;display:flex;gap:6px">
+    <button class="btn bp" onclick="openTraineeSigning()">피교육자 전체 서명</button>
+    <button class="btn bgr" onclick="saveAndExport()">저장 및 PDF</button>
+  </div>
+</div>
+
+<!-- PAGE 1: 교육 이력 -->
+<div class="pg" id="pg1">
+  <div class="hdr"><div class="hdr-r"><div><h1>교육 이력</h1><p>안전보건교육 기록</p></div></div></div>
+  <div id="histArea" style="padding:4px 0"></div>
+</div>
+
+<!-- MODAL: Add Trainee (작업자 선택) -->
+<div class="mo" id="addTraineeMo" style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:flex-end;justify-content:center">
+  <div style="background:var(--s1);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:85vh;padding:16px 14px env(safe-area-inset-bottom,16px);animation:sU .2s ease;display:flex;flex-direction:column">
+    <div style="width:32px;height:3px;background:var(--bdr);border-radius:2px;margin:0 auto 12px"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">피교육자 선택</div>
+    <input class="fi" id="workerSearch" placeholder="이름 검색..." oninput="renderWorkerList()" style="margin-bottom:8px">
+    <div id="workerList" style="overflow-y:auto;flex:1;max-height:55vh"></div>
+    <button class="btn bo" onclick="closeMo('addTraineeMo')" style="margin-top:8px">닫기</button>
+  </div>
+</div>
+@keyframes sU{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+<!-- MODAL: Trainee Signing -->
+<div class="mo" id="tsignMo" style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:flex-end;justify-content:center">
+  <div style="background:var(--s1);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:16px 14px env(safe-area-inset-bottom,16px);animation:sU .2s ease">
+    <div style="width:32px;height:3px;background:var(--bdr);border-radius:2px;margin:0 auto 12px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:15px;font-weight:700" id="tsignTitle">서명</div>
+      <span class="badge b-b" id="tsignProgress"></span>
+    </div>
+    <p style="font-size:11px;color:var(--tx2);margin-bottom:8px" id="tsignInfo"></p>
+    <div class="sig-wrap">
+      <canvas class="sig-canvas" id="tsignCanvas"></canvas>
+      <span class="sig-ph" id="tsignPh">여기에 서명하세요</span>
+      <button class="sig-clr" onclick="clearTsign()">지우기</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button class="btn bo" onclick="closeMo('tsignMo')" style="flex:1">중단</button>
+      <button class="btn bgr" onclick="nextTsign()" style="flex:1">확인 → 다음</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 교육 유형 정의 ───
+const EDU_TYPES = {
+  'new_hire': {
+    label: '신규채용자 안전보건교육',
+    law: '산업안전보건법 제29조 제1항 제1호',
+    lawDetail: '산업안전보건법 제29조(근로자에 대한 안전보건교육) / 시행규칙 제26조',
+    minHours: 8,
+    target: '신규채용자'
+  },
+  'special': {
+    label: '특별안전보건교육',
+    law: '산업안전보건법 제29조 제1항 제3호',
+    lawDetail: '산업안전보건법 제29조 / 시행규칙 별표 5 (유해·위험작업 종사자)',
+    minHours: 16,
+    target: '유해·위험작업 종사자'
+  },
+  'regular': {
+    label: '정기 안전보건교육',
+    law: '산업안전보건법 제29조 제1항 제2호',
+    lawDetail: '산업안전보건법 제29조 / 시행규칙 제26조 (분기별 6시간 이상)',
+    minHours: 6,
+    target: '전체 근로자'
+  },
+  'supervisor': {
+    label: '관리감독자 안전보건교육',
+    law: '산업안전보건법 제29조 제1항 제4호',
+    lawDetail: '산업안전보건법 제29조 / 시행규칙 제29조 (연간 16시간 이상)',
+    minHours: 16,
+    target: '관리감독자'
+  },
+  'change': {
+    label: '작업내용 변경 시 교육',
+    law: '산업안전보건법 제29조 제1항 제1호',
+    lawDetail: '산업안전보건법 제29조 / 시행규칙 제26조 (2시간 이상)',
+    minHours: 2,
+    target: '작업내용 변경 근로자'
+  }
+};
+
+// ─── 교육유형별 교육과정 ───
+const CURRICULA = {
+  'new_hire': [
+    {section:'산업안전보건법 개요',items:[
+      {text:'산업안전보건법의 목적 및 주요 내용',hours:0.5},
+      {text:'근로자의 권리와 의무(안전보건 관련)',hours:0.5},
+      {text:'산업재해보상보험 제도 안내',hours:0.5},
+    ]},
+    {section:'작업장 안전관리',items:[
+      {text:'작업 개시 전 점검에 관한 사항',hours:0.5},
+      {text:'정리정돈 및 통로 확보에 관한 사항',hours:0.5},
+      {text:'안전장구 및 보호구 착용 방법',hours:0.5},
+      {text:'위험기계·기구의 안전작업 방법',hours:0.5},
+    ]},
+    {section:'사고 예방 및 대응',items:[
+      {text:'산업재해 발생 원인 및 예방 대책',hours:0.5},
+      {text:'사고 발생 시 긴급조치 및 대피 요령',hours:0.5},
+      {text:'소화기 사용법 및 화재 예방',hours:0.5},
+      {text:'응급처치 요령(심폐소생술 등)',hours:0.5},
+    ]},
+    {section:'보건관리',items:[
+      {text:'직업병 예방에 관한 사항',hours:0.5},
+      {text:'유해·위험 작업환경 관리(소음, 분진, 화학물질)',hours:0.5},
+      {text:'물질안전보건자료(MSDS) 이해',hours:0.5},
+      {text:'건강증진 및 근골격계 질환 예방',hours:0.5},
+    ]},
+    {section:'현장 안전교육 (쏠트리)',items:[
+      {text:'부서별 작업 공정 및 유해·위험요인 교육',hours:0.5},
+      {text:'부서별 안전작업 절차 및 비상정지 위치 교육',hours:0.5},
+    ]},
+  ],
+  'special': [
+    {section:'취급 물질의 유해·위험성',items:[
+      {text:'취급 화학물질의 명칭 및 물리·화학적 성질',hours:1},
+      {text:'인체에 미치는 영향(급성·만성 건강영향)',hours:1},
+      {text:'GHS 경고표지 및 MSDS 읽는 방법',hours:1},
+      {text:'노출 경로(흡입·경피·경구) 및 노출기준',hours:1},
+    ]},
+    {section:'안전작업 방법 및 보호조치',items:[
+      {text:'유해물질 취급 시 안전작업 절차',hours:1},
+      {text:'개인보호구(방독마스크·보안경·내화학장갑) 선정 및 착용법',hours:1},
+      {text:'국소배기장치 및 환기설비 사용법',hours:1},
+      {text:'작업환경측정 결과 이해 및 활용',hours:1},
+    ]},
+    {section:'응급조치 및 비상대응',items:[
+      {text:'화학물질 누출 시 비상조치 요령',hours:1},
+      {text:'피부·눈 접촉 시 응급처치 방법',hours:1},
+      {text:'흡입·섭취 시 응급처치 방법',hours:1},
+      {text:'비상 세안·샤워 장치 위치 및 사용법',hours:1},
+    ]},
+    {section:'관련 법령 및 관리체계',items:[
+      {text:'산업안전보건법 관련 규정(관리대상유해물질)',hours:1},
+      {text:'작업환경측정 및 특수건강진단 제도',hours:1},
+      {text:'화학물질 저장·보관·폐기 기준',hours:1},
+      {text:'사고사례 및 재발 방지 대책',hours:1},
+    ]},
+  ],
+  'regular': [
+    {section:'안전·보건 일반',items:[
+      {text:'산업안전보건법 주요 개정사항',hours:0.5},
+      {text:'산업재해 발생 현황 및 사례',hours:0.5},
+      {text:'작업장 정리정돈 및 통로 확보',hours:0.5},
+    ]},
+    {section:'작업별 안전수칙',items:[
+      {text:'기계·기구 안전 점검 사항',hours:0.5},
+      {text:'전기 안전 및 감전 예방',hours:0.5},
+      {text:'화재·폭발 예방 및 대응',hours:0.5},
+    ]},
+    {section:'보건관리',items:[
+      {text:'유해인자별 건강장해 예방',hours:0.5},
+      {text:'작업환경 관리(소음·분진·화학물질)',hours:0.5},
+      {text:'근골격계 질환 예방 스트레칭',hours:0.5},
+      {text:'직무스트레스 관리',hours:0.5},
+    ]},
+    {section:'비상시 대응',items:[
+      {text:'비상구·대피경로 확인',hours:0.5},
+      {text:'소화기·소화전 사용법 실습',hours:0.5},
+    ]},
+  ],
+  'supervisor': [
+    {section:'관리감독자의 역할과 책임',items:[
+      {text:'산업안전보건법상 관리감독자의 의무',hours:1},
+      {text:'유해·위험 방지 조치 이행 방법',hours:1},
+      {text:'작업 중지 권한 및 행사 요건',hours:1},
+    ]},
+    {section:'위험성평가',items:[
+      {text:'위험성평가 절차 및 방법',hours:1},
+      {text:'위험요인 파악·감소 대책 수립',hours:1},
+      {text:'위험성평가 실습',hours:1},
+    ]},
+    {section:'재해예방 관리',items:[
+      {text:'산업재해 조사·분석 방법',hours:1},
+      {text:'재해사례 연구 및 재발 방지',hours:1},
+      {text:'안전보건 점검 및 개선 활동',hours:1},
+      {text:'관리감독자 직무교육 총 정리',hours:1},
+    ]},
+    {section:'현장 안전보건관리',items:[
+      {text:'작업환경측정 및 건강진단 관리',hours:1},
+      {text:'보호구 관리 및 지급 기준',hours:1},
+      {text:'안전보건 교육 실시 및 기록관리',hours:1},
+      {text:'비상시 조치 및 보고체계',hours:1},
+      {text:'근로자 건강증진 활동',hours:1},
+      {text:'안전문화 확산 방안',hours:1},
+    ]},
+  ],
+  'change': [
+    {section:'변경 작업 관련 교육',items:[
+      {text:'변경된 작업내용 및 공정 설명',hours:0.5},
+      {text:'변경에 따른 유해·위험요인',hours:0.5},
+      {text:'안전작업 절차 및 주의사항',hours:0.5},
+      {text:'보호구 착용 및 비상조치 요령',hours:0.5},
+    ]},
+  ]
+};
+
+let curEduType = 'new_hire';
+let CURRICULUM = CURRICULA[curEduType];
+
+// ─── 전체 작업자 리스트 ───
+const WORKERS = [
+  {id:'E001',name:'김예배',dept:'대표이사',rank:'대표이사',hire:'1988-09-20'},
+  {id:'E002',name:'신종한',dept:'품질,연구',rank:'이사',hire:'2003-03-07'},
+  {id:'E003',name:'최경진',dept:'영업',rank:'이사',hire:'2009-02-19'},
+  {id:'E004',name:'유종태',dept:'연구실',rank:'부장',hire:'2015-02-23'},
+  {id:'E005',name:'김한길',dept:'연구실',rank:'과장',hire:'2018-12-17'},
+  {id:'E006',name:'김한별',dept:'연구실',rank:'과장',hire:'2019-11-01'},
+  {id:'E007',name:'김지원',dept:'품질',rank:'과장',hire:'2020-07-01'},
+  {id:'E008',name:'이정순',dept:'사무실',rank:'이사',hire:'1999-08-13'},
+  {id:'E009',name:'이용후',dept:'사무실',rank:'과장',hire:'2021-02-15'},
+  {id:'E010',name:'이보금',dept:'연구실',rank:'대리',hire:'2023-08-21'},
+  {id:'E011',name:'김대호(송림)',dept:'포장',rank:'기원',hire:'1997-05-06'},
+  {id:'E012',name:'강이진',dept:'포장',rank:'기원',hire:'1997-11-21'},
+  {id:'E013',name:'이명환',dept:'SEMI',rank:'기원',hire:'1999-07-08'},
+  {id:'E014',name:'마길남',dept:'CNC',rank:'기원',hire:'2000-04-03'},
+  {id:'E015',name:'유민식',dept:'RS성형실',rank:'직장',hire:'2011-06-07'},
+  {id:'E016',name:'강현진(송림)',dept:'송림 밴치레스',rank:'계장',hire:'2017-10-24'},
+  {id:'E017',name:'김윤호',dept:'CN성형실',rank:'사원',hire:'2023-10-04'},
+  {id:'E018',name:'유경님',dept:'후가공',rank:'기장',hire:'2007-02-21'},
+  {id:'E019',name:'최유미',dept:'후가공',rank:'기장',hire:'2007-10-01'},
+  {id:'E020',name:'유미경',dept:'포장',rank:'계장',hire:'2017-05-16'},
+  {id:'E021',name:'고선영',dept:'포장',rank:'사원',hire:'2024-01-26'},
+  {id:'E022',name:'라메쉬',dept:'프리프레그',rank:'사원',hire:'2018-08-18'},
+  {id:'E023',name:'엠디',dept:'CNC',rank:'사원',hire:'2013-06-10'},
+  {id:'E024',name:'리키',dept:'프리프레그',rank:'사원',hire:'2020-12-01'},
+  {id:'E025',name:'수잔',dept:'CNC',rank:'사원',hire:'2021-02-24'},
+  {id:'E026',name:'아날',dept:'CNC',rank:'사원',hire:'2022-06-20'},
+  {id:'E027',name:'유부',dept:'RS성형실',rank:'사원',hire:'2022-06-20'},
+  {id:'E028',name:'자카리아',dept:'CNC',rank:'사원',hire:'2022-12-19'},
+  {id:'E029',name:'임란',dept:'절단실',rank:'사원',hire:'2016-12-16'},
+  {id:'E030',name:'마크',dept:'SEMI',rank:'사원',hire:'2023-03-17'},
+  {id:'E031',name:'아르넬',dept:'CNC',rank:'사원',hire:'2023-03-31'},
+  {id:'E032',name:'아자할',dept:'CNC',rank:'사원',hire:'2023-03-31'},
+  {id:'E033',name:'준',dept:'SEMI',rank:'사원',hire:'2023-10-26'},
+  {id:'E034',name:'모탈렙(송림)',dept:'CNC',rank:'사원',hire:'2017-12-22'},
+  {id:'E035',name:'주',dept:'CN성형실',rank:'사원',hire:'2024-03-28'},
+  {id:'E036',name:'호세인(송림)',dept:'송림성형실',rank:'사원',hire:'2024-05-29'},
+  {id:'E037',name:'림부',dept:'SEMI',rank:'사원',hire:'2020-10-30'},
+  {id:'E038',name:'김태형',dept:'CNC',rank:'사원',hire:'2025-11-01'},
+  {id:'E039',name:'덴마크',dept:'CNC',rank:'사원',hire:'2026-02-06'},
+  {id:'E040',name:'비달',dept:'CNC',rank:'사원',hire:'2026-02-25'},
+  {id:'E041',name:'존',dept:'CN성형실',rank:'사원',hire:'2026-02-25'}
+];
+
+// ─── 강사 자격 정보 ───
+const INSTRUCTOR_CERTS = {
+  '김한별': '산업안전기사',
+  '마길남': '관리감독자'
+};
+
+function updateInstructorInfo(){}
+
+function changeEduType(type){
+  curEduType=type;
+  CURRICULUM=CURRICULA[type];
+  const info=EDU_TYPES[type];
+
+  // Update title
+  document.getElementById('pageTitle').textContent=info.label+'일지';
+
+  // Update banner
+  document.getElementById('infoBanner').innerHTML=
+    `<strong>${info.law}</strong>에 따라 <strong>${info.target}</strong> 대상 <strong>${info.minHours}시간 이상</strong>의 안전보건교육을 실시해야 합니다.`;
+
+  // Update trainee header label
+  const targetLabel = type==='new_hire'?'피교육자(신규채용자)':type==='supervisor'?'피교육자(관리감독자)':'피교육자';
+  document.getElementById('traineeHeader').innerHTML=
+    `${targetLabel} 정보<button class="btn bs bp" style="margin-left:auto" onclick="addTrainee()">+ 추가</button>`;
+
+  // Update curriculum header
+  document.getElementById('curHeader').innerHTML=
+    `교육내용 (${info.label})<button class="btn bs bo" style="margin-left:auto" onclick="checkAllCur()">전체 체크</button>`;
+
+  // Update hours dropdown
+  updateHoursDropdown();
+
+  // Re-init checks and render
+  initChecks();
+  renderCurriculum();
+  renderTrainees();
+}
+
+function updateHoursDropdown(){
+  const info=EDU_TYPES[curEduType];
+  const sel=document.getElementById('eduHours');
+  const min=info.minHours;
+  let opts=`<option value="${min}">${min}시간 (법정 최소)</option>`;
+  if(min>2) opts+=`<option value="${Math.floor(min/2)}">${Math.floor(min/2)}시간 (1차)</option>`;
+  if(min!==2) opts+=`<option value="2">2시간</option>`;
+  if(min<16) opts+=`<option value="16">16시간</option>`;
+  sel.innerHTML=opts;
+}
+
+// ─── STATE ───
+let trainees = []; // [{name,dept,rank,hireDate,sigData}]
+let curChecks = []; // flat array of booleans
+let instrSigData = null;
+let instrSigHas = false;
+let tsignQueue = []; let tsignIdx = 0;
+let history = [];
+
+function getTotalItems(){let n=0;CURRICULUM.forEach(s=>n+=s.items.length);return n}
+function initChecks(){curChecks=new Array(getTotalItems()).fill(false)}
+
+// ─── INIT ───
+function init(){
+  changeEduType('new_hire');
+  loadHistory();
+  document.getElementById('eduDate').value=fmtDate(new Date());
+  renderCurriculum();
+  renderTrainees();
+  renderHistory();
+  setTimeout(()=>initSigCanvas('instrSigCanvas','instrSigPh','instr'),100);
+}
+
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+
+function loadHistory(){try{history=JSON.parse(localStorage.getItem('edu_history')||'[]')}catch(e){history=[]}}
+function saveHistory(){localStorage.setItem('edu_history',JSON.stringify(history))}
+
+// ─── PAGES ───
+function goPage(n){
+  document.querySelectorAll('.pg').forEach((p,i)=>{p.classList.toggle('on',i===n)});
+  document.querySelectorAll('.nb').forEach((b,i)=>{b.classList.toggle('on',i===n)});
+  if(n===1) renderHistory();
+}
+
+// ─── CURRICULUM RENDER ───
+function renderCurriculum(){
+  let h='',idx=0;
+  CURRICULUM.forEach(sec=>{
+    h+=`<div class="cur-sec"><div class="cur-title">${sec.section}</div>`;
+    sec.items.forEach(item=>{
+      const i=idx;
+      h+=`<div class="cur-item ${curChecks[i]?'checked':''}" onclick="toggleCur(${i})">
+        <div class="ck-box">${curChecks[i]?'✓':''}</div>
+        <span style="flex:1">${item.text}</span>
+        <span class="cur-hours">${item.hours}h</span>
+      </div>`;
+      idx++;
+    });
+    h+=`</div>`;
+  });
+  document.getElementById('curArea').innerHTML=h;
+  updateHours();
+}
+
+function toggleCur(i){curChecks[i]=!curChecks[i];renderCurriculum()}
+function checkAllCur(){const all=curChecks.every(v=>v);curChecks=curChecks.map(()=>!all);renderCurriculum()}
+
+function updateHours(){
+  let total=0,idx=0;
+  CURRICULUM.forEach(sec=>{sec.items.forEach(item=>{if(curChecks[idx])total+=item.hours;idx++})});
+  const target=parseInt(document.getElementById('eduHours').value)||8;
+  document.getElementById('hourText').textContent=`${total} / ${target}시간`;
+  const pct=Math.min(100,total/target*100);
+  document.getElementById('hourFill').style.width=pct+'%';
+  document.getElementById('hourFill').style.background=pct>=100?'var(--grn)':'var(--org)';
+}
+
+// ─── TRAINEES ───
+function addTrainee(){
+  document.getElementById('workerSearch').value='';
+  renderWorkerList();
+  openMo('addTraineeMo');
+}
+
+function renderWorkerList(){
+  const q=document.getElementById('workerSearch').value.trim().toLowerCase();
+  const added=new Set(trainees.map(t=>t.name));
+  let filtered=WORKERS.filter(w=>!added.has(w.name));
+  if(q) filtered=filtered.filter(w=>w.name.toLowerCase().includes(q)||w.dept.toLowerCase().includes(q));
+  if(!filtered.length){
+    document.getElementById('workerList').innerHTML='<div class="empty">검색 결과 없음</div>';return;
+  }
+  document.getElementById('workerList').innerHTML=filtered.map(w=>
+    `<div class="emp-row" style="cursor:pointer;padding:10px 4px" onclick="selectWorker('${w.id}')">
+      <div class="emp-av">${w.name[0]}</div>
+      <div class="emp-info">
+        <div class="emp-nm">${w.name} <span style="color:var(--tx3);font-size:10px;font-weight:400">${w.id}</span></div>
+        <div class="emp-dept" style="font-size:10px;color:var(--tx2)">${w.dept} · ${w.rank} · 입사 ${w.hire}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function selectWorker(id){
+  const w=WORKERS.find(x=>x.id===id);
+  if(!w)return;
+  trainees.push({name:w.name,dept:w.dept,rank:w.rank,hireDate:w.hire,sigData:null});
+  renderTrainees();renderWorkerList();
+  T(`${w.name} 추가 완료`);
+}
+
+function removeTrainee(i){
+  if(!confirm(`${trainees[i].name}을(를) 삭제하시겠습니까?`))return;
+  trainees.splice(i,1);renderTrainees();
+}
+
+function renderTrainees(){
+  if(!trainees.length){
+    document.getElementById('traineeArea').innerHTML='<div class="empty">피교육자를 추가하세요</div>';return;
+  }
+  let h='';
+  trainees.forEach((t,i)=>{
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(63,125,232,.15);color:var(--acc2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${t.name[0]}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${t.name} <span class="badge b-b">${t.dept}</span></div>
+        <div style="font-size:10px;color:var(--tx2)">${t.rank} · 채용일: ${t.hireDate||'-'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        ${t.sigData?'<span class="badge b-g">서명완료</span>':'<span class="badge b-o">미서명</span>'}
+        <button onclick="removeTrainee(${i})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 6px">×</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('traineeArea').innerHTML=h;
+}
+
+// ─── SIGNATURE ───
+const sigState={};
+function initSigCanvas(canvasId,phId,key){
+  const c=document.getElementById(canvasId);
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  const r=c.parentElement.getBoundingClientRect();
+  c.width=r.width;c.height=130;
+  ctx.strokeStyle='#222';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+  document.getElementById(phId).style.display='block';
+  sigState[key]={ctx,has:false,canvas:c};
+
+  let drawing=false;
+  function gP(e){const rect=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-rect.left,y:t.clientY-rect.top}}
+  c.ontouchstart=c.onmousedown=e=>{e.preventDefault();drawing=true;const p=gP(e);ctx.beginPath();ctx.moveTo(p.x,p.y);sigState[key].has=true;document.getElementById(phId).style.display='none'};
+  c.ontouchmove=c.onmousemove=e=>{if(!drawing)return;e.preventDefault();const p=gP(e);ctx.lineTo(p.x,p.y);ctx.stroke()};
+  c.ontouchend=c.onmouseup=()=>{drawing=false};
+}
+
+function clearSig(key){
+  const s=sigState[key];if(!s)return;
+  s.ctx.clearRect(0,0,s.canvas.width,s.canvas.height);s.has=false;
+  if(key==='instr'){instrSigData=null;instrSigHas=false;document.getElementById('instrSigPh').style.display='block'}
+  initSigCanvas(key==='instr'?'instrSigCanvas':'tsignCanvas',key==='instr'?'instrSigPh':'tsignPh',key);
+}
+
+// ─── TRAINEE SIGNING ───
+function openTraineeSigning(){
+  if(!trainees.length){T('피교육자를 먼저 추가하세요','var(--red)');return}
+  tsignQueue=[];
+  trainees.forEach((t,i)=>{if(!t.sigData)tsignQueue.push(i)});
+  if(!tsignQueue.length){T('전원 서명 완료','var(--grn)');return}
+  tsignIdx=0;
+  showTsign();
+  openMo('tsignMo');
+}
+
+function showTsign(){
+  const i=tsignQueue[tsignIdx];
+  const t=trainees[i];
+  document.getElementById('tsignTitle').textContent=`${t.name} 서명`;
+  document.getElementById('tsignInfo').textContent=`${t.dept} · ${t.rank} (${tsignIdx+1}/${tsignQueue.length})`;
+  document.getElementById('tsignProgress').textContent=`${tsignIdx+1} / ${tsignQueue.length}`;
+  setTimeout(()=>initSigCanvas('tsignCanvas','tsignPh','tsign'),80);
+}
+
+function clearTsign(){clearSig('tsign')}
+
+function nextTsign(){
+  const s=sigState['tsign'];
+  if(!s||!s.has){T('서명을 해주세요','var(--red)');return}
+  const i=tsignQueue[tsignIdx];
+  trainees[i].sigData=s.canvas.toDataURL('image/png');
+  tsignIdx++;
+  if(tsignIdx>=tsignQueue.length){
+    closeMo('tsignMo');renderTrainees();T('전체 서명 완료!','var(--grn)');return;
+  }
+  showTsign();renderTrainees();
+}
+
+// ─── SAVE & PDF ───
+function saveAndExport(){
+  // validate
+  const eduDate=document.getElementById('eduDate').value;
+  if(!eduDate){T('교육일자를 입력하세요','var(--red)');return}
+  if(!trainees.length){T('피교육자를 추가하세요','var(--red)');return}
+  const is=sigState['instr'];
+  if(!is||!is.has){T('교육강사 서명을 해주세요','var(--red)');return}
+  instrSigData=is.canvas.toDataURL('image/png');
+
+  // count hours
+  let totalHours=0,idx=0;
+  CURRICULUM.forEach(sec=>{sec.items.forEach(item=>{if(curChecks[idx])totalHours+=item.hours;idx++})});
+
+  const instrName=document.getElementById('eduInstructor').value;
+  const instrCert=INSTRUCTOR_CERTS[instrName]||'';
+
+  const record={
+    id:Date.now().toString(36),
+    eduType:curEduType,
+    eduTypeLabel:EDU_TYPES[curEduType].label,
+    eduDate,
+    eduPlace:document.getElementById('eduPlace').value,
+    eduHours:document.getElementById('eduHours').value,
+    instructor:instrName,
+    instrCert,
+    instrSigData,
+    trainees:trainees.map(t=>({...t})),
+    curriculum:CURRICULUM,
+    curChecks:[...curChecks],
+    completedHours:totalHours,
+    remarks:document.getElementById('remarks').value,
+    createdAt:new Date().toISOString()
+  };
+
+  history.unshift(record);
+  saveHistory();
+  generatePDF(record);
+  T('저장 완료! PDF 다운로드');
+}
+
+async function generatePDF(rec){
+  const PW=1587,PH=2245;
+  const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;
+  const cx=cv.getContext('2d');
+  const sc=PW/210;
+  const mm=v=>v*sc;
+
+  function fillR(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(mm(x),mm(y),mm(w),mm(h))}
+  function lineH(x1,y1,x2,y2,c){cx.strokeStyle=c||'#ccc';cx.lineWidth=1;cx.beginPath();cx.moveTo(mm(x1),mm(y1));cx.lineTo(mm(x2),mm(y2));cx.stroke()}
+  function txt(text,x,y,opt={}){
+    const sz=opt.size||10;cx.font=`${opt.bold?'bold ':''}${mm(sz)*0.7}px "Noto Sans KR",sans-serif`;
+    cx.fillStyle=opt.color||'#333';cx.textAlign=opt.align||'left';cx.textBaseline='middle';
+    // truncate if too long
+    let t=text;
+    const maxW=opt.maxW?mm(opt.maxW):mm(170);
+    while(cx.measureText(t).width>maxW&&t.length>3)t=t.slice(0,-1)+'…';
+    cx.fillText(t,mm(x),mm(y));
+  }
+  function rect(x,y,w,h,c){cx.strokeStyle=c||'#bbb';cx.lineWidth=1;cx.strokeRect(mm(x),mm(y),mm(w),mm(h))}
+
+  cx.fillStyle='#fff';cx.fillRect(0,0,PW,PH);
+
+  // Header
+  const pdfTitle=(rec.eduTypeLabel||'신규채용자 안전보건교육')+'일지';
+  fillR(0,0,210,20,'#1a3353');
+  txt(pdfTitle,105,7,{size:13,color:'#fff',align:'center',bold:true});
+  txt('(주)쏠트리 SOLTRI',105,14,{size:8,color:'#b4c5e0',align:'center'});
+
+
+  let y=26;
+
+  // 기본정보
+  fillR(15,y,180,7,'#e8eef5');
+  txt('교육일자',17,y+3.5,{size:8,bold:true,color:'#555'});
+  const dp=rec.eduDate.split('-');
+  txt(`${dp[0]}년 ${dp[1]}월 ${dp[2]}일`,45,y+3.5,{size:8});
+  txt('교육시간',100,y+3.5,{size:8,bold:true,color:'#555'});
+  txt(`${rec.eduHours}시간`,125,y+3.5,{size:8});
+  txt('이수',155,y+3.5,{size:8,bold:true,color:'#555'});
+  txt(`${rec.completedHours}h`,165,y+3.5,{size:8,color:rec.completedHours>=parseInt(rec.eduHours)?'#2e7d32':'#d32f2f'});
+  y+=7;
+  fillR(15,y,180,7,'#f5f7fa');
+  txt('교육장소',17,y+3.5,{size:8,bold:true,color:'#555'});
+  txt(rec.eduPlace||'-',45,y+3.5,{size:8});
+  txt('교육강사',100,y+3.5,{size:8,bold:true,color:'#555'});
+  const instrLabel=rec.instrCert?`${rec.instructor} (${rec.instrCert})`:rec.instructor||'-';
+  txt(instrLabel,125,y+3.5,{size:8});
+  y+=10;
+
+  // 교육내용
+  const pdfCurLabel='교육내용 ('+(rec.eduTypeLabel||'법정 교육과정')+')';
+  fillR(15,y,180,7,'#1a3353');
+  txt(pdfCurLabel,105,y+3.5,{size:9,color:'#fff',align:'center',bold:true});
+  y+=7;
+
+  const pdfCurriculum=rec.curriculum||CURRICULUM;
+  let cIdx=0;
+  pdfCurriculum.forEach(sec=>{
+    fillR(15,y,180,5,'#e3eaf5');
+    txt(sec.section,20,y+2.5,{size:7,bold:true,color:'#1a3353'});
+    y+=5;
+    sec.items.forEach(item=>{
+      if(cIdx%2===0) fillR(15,y,180,5,'#fafafa');
+      const checked=rec.curChecks[cIdx];
+      txt(checked?'■':'□',17,y+2.5,{size:6.5,color:checked?'#2e7d32':'#999'});
+      txt(item.text,22,y+2.5,{size:6.5,maxW:140});
+      txt(`${item.hours}h`,180,y+2.5,{size:6,color:'#888',align:'center'});
+      y+=5;
+      cIdx++;
+    });
+  });
+  y+=4;
+
+  // 피교육자 명단 & 서명
+  fillR(15,y,180,7,'#1a3353');
+  txt('피교육자 명단 및 서명',105,y+3.5,{size:9,color:'#fff',align:'center',bold:true});
+  y+=7;
+
+  // Table header
+  fillR(15,y,180,6,'#e8eef5');
+  txt('No',22,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  txt('성명',38,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  txt('부서',62,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  txt('직급',82,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  txt('채용일',100,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  txt('서명',150,y+3,{size:6.5,bold:true,color:'#555',align:'center'});
+  y+=6;
+
+  const sigImgs=[];
+  for(const t of rec.trainees){
+    if(t.sigData){const img=await loadImg(t.sigData);sigImgs.push(img)}else sigImgs.push(null);
+  }
+
+  const rh=10;
+  rec.trainees.forEach((t,i)=>{
+    if(i%2===0)fillR(15,y,180,rh,'#fafafa');
+    rect(15,y,180,rh,'#ddd');
+    txt(`${i+1}`,22,y+rh/2,{size:7,align:'center'});
+    txt(t.name,38,y+rh/2,{size:7,align:'center'});
+    txt(t.dept,62,y+rh/2,{size:6.5,align:'center'});
+    txt(t.rank||'-',82,y+rh/2,{size:6.5,align:'center'});
+    txt(t.hireDate||'-',100,y+rh/2,{size:6,align:'center'});
+    if(sigImgs[i])cx.drawImage(sigImgs[i],mm(125),mm(y+1),mm(50),mm(rh-2));
+    y+=rh;
+  });
+  y+=6;
+
+  // 특이사항
+  txt('※ 특이사항',17,y,{size:7,bold:true,color:'#555'});y+=4;
+  rect(15,y,180,12,'#ddd');
+  if(rec.remarks)txt(rec.remarks,17,y+6,{size:6.5,color:'#666',maxW:170});
+  y+=16;
+
+  // 강사 서명
+  txt('교육강사 :',17,y,{size:8,bold:true});
+  const instrPdfLabel=rec.instrCert?`${rec.instructor} (${rec.instrCert})`:rec.instructor||'';
+  txt(instrPdfLabel,45,y,{size:8});
+  txt('(서명)',140,y,{size:7,color:'#999'});
+  if(rec.instrSigData){
+    const img=await loadImg(rec.instrSigData);
+    if(img)cx.drawImage(img,mm(145),mm(y-6),mm(45),mm(18));
+  }
+  y+=6;
+
+  // 법적 근거
+  const pdfLaw=rec.eduType&&EDU_TYPES[rec.eduType]?EDU_TYPES[rec.eduType].lawDetail:'산업안전보건법 제29조(근로자에 대한 안전보건교육) / 시행규칙 제26조';
+  txt(pdfLaw,105,y+4,{size:6,color:'#999',align:'center'});
+
+  // Generate PDF
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+  const names=rec.trainees.map(t=>t.name).join('_');
+  const typeLabel=rec.eduTypeLabel||'안전교육';
+  const fn=`${typeLabel}일지_${names}_${rec.eduDate}.pdf`;
+  doc.save(fn);
+
+  // Google Drive 업로드
+  if(DRIVE_SCRIPT_URL){
+    uploadToDrive(doc.output('datauristring').split(',')[1], fn, '안전교육_문서', rec.eduDate);
+  }
+}
+
+function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src})}
+
+// ─── GOOGLE DRIVE UPLOAD ───
+async function uploadToDrive(base64Data, fileName, folder, subFolder){
+  try{
+    T('Drive 업로드 중...','var(--acc)');
+    const res=await fetch(DRIVE_SCRIPT_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fileData:base64Data, fileName, folder, subFolder})
+    });
+    setTimeout(()=>T('Drive 업로드 완료!','var(--grn)'),1500);
+  }catch(e){
+    T('Drive 업로드 실패','var(--red)');
+    console.error('Drive upload error:',e);
+  }
+}
+
+// ─── HISTORY ───
+function renderHistory(){
+  if(!history.length){document.getElementById('histArea').innerHTML='<div class="cd"><div class="cb"><div class="empty">교육 이력이 없습니다</div></div></div>';return}
+  let h='';
+  history.forEach((rec,i)=>{
+    const names=rec.trainees.map(t=>t.name).join(', ');
+    const signed=rec.trainees.filter(t=>t.sigData).length;
+    h+=`<div class="hist-card">
+      <div class="hist-top">
+        <span class="hist-name">${names||'(없음)'}</span>
+        <span class="hist-date">${rec.eduDate}</span>
+      </div>
+      <div class="hist-info"><span class="badge b-b">${rec.eduTypeLabel||'신규채용자'}</span> ${rec.eduPlace||'-'} · 강사: ${rec.instructor||'-'} · ${rec.completedHours}h 이수 · 서명 ${signed}/${rec.trainees.length}</div>
+      <div class="hist-acts">
+        <button class="btn bs bp" onclick="reExportPDF(${i})">PDF 재출력</button>
+        <button class="btn bs bo" onclick="deleteRecord(${i})">삭제</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('histArea').innerHTML=`<div style="padding:0 10px">${h}</div>`;
+}
+
+function reExportPDF(i){generatePDF(history[i]);T('PDF 다운로드')}
+function deleteRecord(i){
+  if(!confirm('이 기록을 삭제하시겠습니까?'))return;
+  history.splice(i,1);saveHistory();renderHistory();
+}
+
+// ─── RESET ───
+function resetForm(){
+  if(trainees.length>0&&!confirm('작성 중인 내용을 초기화하시겠습니까?'))return;
+  trainees=[];initChecks();instrSigData=null;instrSigHas=false;
+  document.getElementById('eduPlace').value='';
+  document.getElementById('eduInstructor').value='';
+  document.getElementById('remarks').value='';
+  document.getElementById('eduDate').value=fmtDate(new Date());
+  renderCurriculum();renderTrainees();
+  clearSig('instr');
+  T('초기화 완료');
+}
+
+// ─── UTILS ───
+function T(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--grn)';t.style.color='#fff';t.className='toast show';setTimeout(()=>t.className='toast',2000)}
+function openMo(id){document.getElementById(id).style.display='flex'}
+function closeMo(id){document.getElementById(id).style.display='none'}
+
+init();
+</script>
+</body>
+</html>
