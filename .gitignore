@@ -13,6 +13,10 @@ CNC_ANAL/soltri_config.json
 자동화/배출/config.json
 자동화/배출/폐수배출시설/water_config.json
 
+# Obsidian
+.obsidian/
+.attachments/
+
 # 개별 repo로 관리
 warehouse/
 clothing/

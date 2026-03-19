@@ -15,10 +15,41 @@
       "Bash(done)",
       "Bash(gh auth:*)",
       "Bash(where git:*)",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "Bash(python3 -c \":*)",
+      "Bash(powershell -NoProfile -Command '$d = \\(Get-ChildItem \"\"G:\\\\\"\" | Select-Object -First 1\\).FullName; $src = \"\"C:\\\\Users\\\\admin\\\\.claude\"\"; $dst = Join-Path $d \"\".claude\"\"; robocopy $src $dst /MIR /XA:SH /R:3 /W:5 /MT:8 /NP /XF \"\".credentials.json\"\" /XD \"\"shell-snapshots\"\" \"\"debug\"\" \"\"ide\"\" \"\"plugins\"\" \"\"backups\"\"; Write-Output \"\"완료\"\"')",
+      "Bash(powershell -NoProfile -Command '$d = \\(Get-ChildItem \"\"G:\\\\\"\" | Select-Object -First 1\\).FullName; $src = \"\"C:\\\\Users\\\\admin\\\\Desktop\\\\work\"\"; $dst = Join-Path $d \"\"work\"\"; robocopy $src $dst /MIR /XA:SH /R:3 /W:5 /MT:8 /NP /XF \"\"desktop.ini\"\" \"\"*.tmp\"\" /XD \"\".git\"\" \"\"__pycache__\"\" \"\"node_modules\"\" \"\".claude\"\" \"\"warehouse\"\" \"\"clothing\"\"; Write-Output \"\"완료\"\"')",
+      "Bash(ls \"/c/Users/admin/Desktop/work/warehouse/\"*.xlsx)",
+      "Bash(ls \"/c/Users/admin/Desktop/work/\"*재고창고*.xlsx)",
+      "WebFetch(domain:docs.google.com)",
+      "WebFetch(domain:doc-14-1c-sheets.googleusercontent.com)",
+      "mcp__claude_ai_Google_Calendar__gcal_list_events",
+      "Bash(chcp 65001)",
+      "Bash(python3 warehouse/sync_qty.py)",
+      "mcp__claude_ai_Google_Calendar__gcal_update_event",
+      "mcp__claude_ai_Google_Calendar__gcal_create_event",
+      "Bash(python3:*)",
+      "Bash(ls -laR \"C:/Users/admin/Desktop/work/E7/림부\\(250314\\)/\")",
+      "Bash(ls -laR \"C:/Users/admin/Desktop/work/E7/리키\\(230103\\)/\")",
+      "Bash(ls -la \"C:/Users/admin/Desktop/work/E7/E7-4_서류\\(2027\\)/\")",
+      "Bash(pip list:*)",
+      "Bash(ls -laR \"C:/Users/admin/Desktop/work/E7/F-2-9\\(거주 비자,점수제\\)/7.외국인신상 기술서/\")",
+      "Bash(ls -laR \"C:/Users/admin/Desktop/work/E7/F-2-9\\(거주 비자,점수제\\)/8.신원보증서/\")",
+      "Bash(curl -s -X POST http://localhost:5050/generate -H 'Content-Type: application/json' -d '{\"\"\"\"name_kr\"\"\"\":\"\"\"\"수잔\"\"\"\",\"\"\"\"name_en\"\"\"\":\"\"\"\"Sapkota Sujan\"\"\"\",\"\"\"\"reg_no\"\"\"\":\"\"\"\"930416-5120125\"\"\"\",\"\"\"\"passport\"\"\"\":\"\"\"\"PA2234641\"\"\"\",\"\"\"\"dob\"\"\"\":\"\"\"\"1993.04.16\"\"\"\",\"\"\"\"nationality\"\"\"\":\"\"\"\"네팔 \\(Nepal\\)\"\"\"\",\"\"\"\"gender\"\"\"\":\"\"\"\"남 \\(Male\\)\"\"\"\",\"\"\"\"visa_type\"\"\"\":\"\"\"\"E-7-4\"\"\"\",\"\"\"\"contract_start\"\"\"\":\"\"\"\"2027-06-07\"\"\"\",\"\"\"\"contract_end\"\"\"\":\"\"\"\"2030-06-06\"\"\"\",\"\"\"\"sign_date\"\"\"\":\"\"\"\"2027-06-07\"\"\"\",\"\"\"\"base_wage\"\"\"\":\"\"\"\"________\"\"\"\",\"\"\"\"overtime_pay\"\"\"\":\"\"\"\"________\"\"\"\",\"\"\"\"monthly_total\"\"\"\":\"\"\"\"________\"\"\"\",\"\"\"\"annual_total\"\"\"\":\"\"\"\"________\"\"\"\",\"\"\"\"spouse_surname\"\"\"\":\"\"\"\"Parajuli\"\"\"\",\"\"\"\"spouse_given\"\"\"\":\"\"\"\"Anita\"\"\"\",\"\"\"\"spouse_dob\"\"\"\":\"\"\"\"2000.02.19\"\"\"\",\"\"\"\"spouse_passport\"\"\"\":\"\"\"\"11330949\"\"\"\",\"\"\"\"spouse_address\"\"\"\":\"\"\"\"인천시 연수구 동춘동 943 동남아파트 105동 1509호\"\"\"\",\"\"\"\"guarantee_start\"\"\"\":\"\"\"\"2027.06.07\"\"\"\",\"\"\"\"guarantee_end\"\"\"\":\"\"\"\"2030.12.31\"\"\"\"}')",
+      "Bash(taskkill //f //im python3.exe)",
+      "Bash(taskkill //f //im python.exe)",
+      "Bash(curl -v http://127.0.0.1:5050/workers)",
+      "Bash(find \"c:/Users/admin/Desktop/work/BUY/STRIP/유진이일\\(수지,개시제,이형제\\)/\" -type f)",
+      "Bash(find \"c:/Users/admin/Desktop/work/BUY/MOSTUF/국도화학\\(에폭시,촉진제\\)/\" -type f)",
+      "Bash(start \"\" \"c:/Users/admin/Desktop/work/BUY/발주서_생성기.html\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(start \"\" \"c:/Users/admin/Desktop/work/frequency/index.html\")",
+      "Bash(start \"\" \"c:/Users/admin/Desktop/work/frequency/print_wr.html\")",
+      "Bash(grep -E \"\\\\.\\(html|json|py|xlsx\\)$\")"
     ],
     "additionalDirectories": [
-      "C:\\Users\\admin\\.claude\\projects\\c--Users-admin-Desktop-work"
+      "C:\\Users\\admin\\.claude\\projects\\c--Users-admin-Desktop-work",
+      "C:\\Users\\admin\\Desktop\\work\\E7"
     ]
   }
 }

@@ -19,6 +19,7 @@
 8. prjt_B - 세무/법률 자문 프로젝트
 9. tools / workflows - 예비 폴더
 10. add_monthly.py / add_prediction.py - 대시보드 기능 확장 유틸리티
+11. BUY - 구매 발주서 관리 및 자동화
 
 ## 보고 형식
 - 프로젝트별 한줄 요약 + 진척률(%) + 상태 표시
