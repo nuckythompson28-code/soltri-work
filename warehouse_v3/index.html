@@ -195,7 +195,16 @@
   </div>
   <div class="sheet-field">
     <span class="sheet-label">치수</span>
-    <input id="sheetItem" class="sheet-input" placeholder="예: 245*250*15">
+    <div style="display:flex;gap:4px;align-items:center">
+      <input id="sheetItem" class="sheet-input" placeholder="예: 245*250*15" style="flex:1" oninput="updateChamferVisibility()">
+      <div id="chamferWrap" style="display:none;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:2px">
+          <span style="font-size:11px;color:var(--muted)">(</span>
+          <input id="sheetChamfer" class="sheet-input" type="number" min="0" step="0.5" placeholder="C" style="width:44px;text-align:center;padding:4px 2px" oninput="syncChamferToItem()">
+          <span style="font-size:11px;color:var(--muted)">C)</span>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="sheet-field">
     <span class="sheet-label">소재</span>

@@ -293,6 +293,29 @@ function getMaterialColor(mat){
 
 let currentEditCard = null;
 
+function parseChamfer(val){
+  const m = (val||'').match(/^(\d+\*\d+\*\d+)\((\d+(?:\.\d+)?)C\)$/);
+  if(m) return { dim: m[1], chamfer: m[2] };
+  return { dim: val||'', chamfer: '' };
+}
+
+function updateChamferVisibility(){
+  const input = document.getElementById('sheetItem');
+  const wrap = document.getElementById('chamferWrap');
+  const val = input.value.replace(/\([\d.]*C?\)$/, '').trim();
+  const isDimFormat = /^\d+\*\d+\*\d+$/.test(val);
+  wrap.style.display = isDimFormat ? '' : 'none';
+  if(!isDimFormat) document.getElementById('sheetChamfer').value = '';
+}
+
+function syncChamferToItem(){
+  const input = document.getElementById('sheetItem');
+  const cInput = document.getElementById('sheetChamfer');
+  const base = input.value.replace(/\([\d.]*C?\)$/, '').trim();
+  const c = cInput.value;
+  input.value = c ? base + '(' + c + 'C)' : base;
+}
+
 function openSheet(slotId){
   const slot = data[slotId];
   if(!slot) return;
@@ -300,13 +323,16 @@ function openSheet(slotId){
   document.getElementById('sheetLoc').textContent = loc;
   document.getElementById('sheetType').value = slot.type || '';
   document.getElementById('sheetStatus').value = slot.status === 'UNUSED' ? 'UNUSED' : '';
+  const parsed = parseChamfer(slot.item);
   document.getElementById('sheetItem').value = slot.item || '';
+  document.getElementById('sheetChamfer').value = parsed.chamfer;
   document.getElementById('sheetMaterial').value = slot.material || '';
   document.getElementById('sheetQty').value = slot.qty || '';
   document.getElementById('sheetInDate').value = slot.inDate || '';
   document.getElementById('sheetMemo').value = slot.memo || '';
   document.getElementById('sheetBackdrop').classList.add('on');
   document.getElementById('sheet').classList.add('on');
+  updateChamferVisibility();
 }
 
 function closeSheet(){
