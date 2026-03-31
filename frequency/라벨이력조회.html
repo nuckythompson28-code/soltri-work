@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Soltri 라벨이력 조회</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
+
+/* 상단 입력 영역 */
+.top{background:#1e3a5f;padding:20px 24px;color:#fff}
+.top h1{font-size:22px;margin-bottom:4px}
+.top .sub{font-size:12px;color:#94a3b8;margin-bottom:16px}
+.input-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-group label{font-size:13px;color:#94a3b8;font-weight:600}
+.input-group input,.input-group select{font-size:18px;padding:10px 14px;border:2px solid #475569;border-radius:8px;background:#0f172a;color:#fff;width:160px;font-family:inherit}
+.input-group input:focus,.input-group select:focus{outline:none;border-color:#3b82f6}
+.input-group input::placeholder{color:#64748b;font-size:14px}
+.btn-search{font-size:18px;padding:10px 28px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;height:46px}
+.btn-search:hover{background:#2563eb}
+.btn-clear{font-size:14px;padding:10px 16px;background:#475569;color:#fff;border:none;border-radius:8px;cursor:pointer;height:46px}
+.btn-clear:hover{background:#64748b}
+.search-hint{font-size:11px;color:#64748b;margin-top:8px}
+
+/* 하단 2컬럼 */
+.content{display:flex;gap:16px;padding:16px 24px;height:calc(100vh - 180px);min-height:500px}
+
+/* 왼쪽: 소재 카드 */
+.left{width:280px;flex-shrink:0}
+.mat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);height:100%;overflow-y:auto}
+.mat-card h2{font-size:16px;color:#1e3a5f;margin-bottom:12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px}
+.mat-card .empty{color:#94a3b8;font-size:14px;text-align:center;padding:40px 0}
+.mat-info{margin-bottom:12px}
+.mat-info .mi-label{font-size:11px;color:#94a3b8;margin-bottom:2px}
+.mat-info .mi-value{font-size:18px;font-weight:800;color:#1e3a5f}
+.mat-stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.stat-box{background:#f8fafc;border-radius:8px;padding:10px;text-align:center;border:1px solid #e2e8f0}
+.stat-box .sv{font-size:22px;font-weight:800}
+.stat-box .sl{font-size:10px;color:#94a3b8;margin-top:2px}
+.stat-box.danger .sv{color:#ef4444}
+.stat-box.warn .sv{color:#f59e0b}
+.stat-box.ok .sv{color:#22c55e}
+.stat-box.info .sv{color:#3b82f6}
+
+/* 거래처 목록 */
+.cust-list{margin-top:12px}
+.cust-list h3{font-size:12px;color:#64748b;margin-bottom:6px}
+.cust-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.cust-item .cn{color:#334155}
+.cust-item .cq{font-weight:700;color:#1e3a5f}
+
+/* 오른쪽: 이력 */
+.right{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hist-header h2{font-size:16px;color:#1e3a5f}
+.hist-count{font-size:13px;color:#64748b}
+.hist-scroll{flex:1;overflow-y:auto;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.hist-scroll{padding:6px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.hist-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;width:calc(25% - 3px);box-sizing:border-box}
+.hist-card:hover{background:#f8fafc}
+.hist-line1{display:flex;justify-content:space-between;align-items:center;font-size:22px}
+.hist-line1 .h-date{color:#3b82f6;font-weight:700}
+.hist-line1 .h-qty{font-weight:900;color:#1e3a5f;font-size:28px}
+.hist-line2{margin-top:4px;font-size:18px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-line2 .h-cust{color:#334155;font-weight:600}
+.hist-empty{text-align:center;padding:60px;color:#94a3b8;font-size:18px;width:100%}
+.suggest-box{background:#fef2f2;border:3px solid #ef4444;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px;width:100%}
+.suggest-box .sg-label{font-size:13px;color:#64748b;margin-bottom:4px}
+.suggest-box .sg-value{font-size:40px;font-weight:900;color:#ef4444}
+.suggest-box .sg-detail{font-size:12px;color:#94a3b8;margin-top:4px}
+
+/* 고빈도 카드 */
+.freq-item{background:#fff;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.freq-item:hover{border-color:#3b82f6;background:#f8fafc}
+.freq-item.active{border-color:#3b82f6;background:#eff6ff}
+.freq-item .fi-chisu{font-size:14px;font-weight:800;color:#1e3a5f}
+.freq-item .fi-row{display:flex;justify-content:space-between;align-items:center;margin-top:3px}
+.freq-item .fi-jaejil{font-size:11px;padding:1px 6px;border-radius:4px;font-weight:700;color:#fff}
+.fi-CN10{background:#b8860b}.fi-RS40{background:#0d9488}.fi-CM20{background:#6b7280}.fi-CN20{background:#8b5cf6}
+.freq-item .fi-info{font-size:10px;color:#94a3b8}
+.freq-item .fi-stock{font-size:13px;font-weight:800;margin-top:3px}
+.fi-stock.danger{color:#ef4444}
+.fi-stock.warn{color:#f59e0b}
+.fi-stock.ok{color:#22c55e}
+.fi-stock.unknown{color:#94a3b8}
+
+/* 반응형 */
+@media(max-width:768px){
+  .content{flex-direction:column;height:auto}
+  .left{width:100%}
+}
+</style>
+</head>
+<body>
+<script src="label_data.js" onerror="console.log('label_data.js 없음')"></script>
+<script src="blocklist.js" onerror="console.log('blocklist.js 없음')"></script>
+
+<!-- 상단 입력 -->
+<div class="top">
+  <h1>Soltri 라벨이력 조회</h1>
+  <div class="sub">치수와 소재를 입력하면 발송 이력이 나옵니다</div>
+  <div class="input-row">
+    <div class="input-group">
+      <label>내경</label>
+      <input type="text" id="inD1" placeholder="예: 60" autofocus inputmode="decimal"
+             onfocus="this.select()"
+             onkeydown="if(event.key==='Enter'){document.getElementById('inD2').focus();event.preventDefault()}">
+    </div>
+    <div class="input-group">
+      <label>외경</label>
+      <input type="text" id="inD2" placeholder="예: 65" inputmode="decimal"
+             onfocus="this.select()"
+             onkeydown="if(event.key==='Enter'){document.getElementById('inD3').focus();event.preventDefault()}">
+    </div>
+    <div class="input-group">
+      <label>높이 (없으면 빈칸)</label>
+      <input type="text" id="inD3" placeholder="예: 10" inputmode="decimal"
+             onfocus="this.select()"
+             onkeydown="if(event.key==='Enter'){document.getElementById('inMat').focus();event.preventDefault()}">
+    </div>
+    <div class="input-group">
+      <label>소재</label>
+      <select id="inMat" onkeydown="if(event.key==='Enter'){doSearch();event.preventDefault()}">
+        <option value="">전체</option>
+        <option value="CN10">CN10</option>
+        <option value="CN20">CN20</option>
+        <option value="CM20">CM20</option>
+        <option value="RS40">RS40</option>
+        <option value="RS20">RS20</option>
+        <option value="CG72">CG72</option>
+        <option value="M/P">M/P</option>
+        <option value="M/T">M/T</option>
+        <option value="M/NW">M/NW</option>
+      </select>
+    </div>
+    <button class="btn-search" onclick="doSearch()">검색</button>
+    <button class="btn-clear" onclick="doClear()">초기화</button>
+    <button class="btn-clear" onclick="toggleBlocklist()" style="background:#ef4444;border:1px solid #f87171">차단목록 <span id="blCount"></span></button>
+  </div>
+  <div class="search-hint">내경 → Enter → 외경 → Enter → 높이 → Enter → 소재 → Enter로 바로 검색됩니다</div>
+</div>
+
+<!-- 차단 목록 패널 -->
+<div id="blPanel" style="display:none;background:#1e293b;border-bottom:2px solid #ef4444;padding:14px 24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+    <span style="font-size:14px;font-weight:700;color:#f87171">차단된 품목</span>
+    <span style="font-size:11px;color:#94a3b8">선생산 분석에서 제외되는 품목입니다</span>
+  </div>
+  <div id="blList" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+</div>
+
+<!-- 하단 3컬럼 -->
+<div class="content">
+  <!-- 왼쪽: 고빈도 품목 카드 -->
+  <div class="left" style="width:240px">
+    <div class="mat-card" id="freqCard">
+      <h2 style="font-size:14px">선생산 필요 <span style="font-size:11px;color:#94a3b8;font-weight:400" id="freqLoading">로딩중...</span></h2>
+      <div id="freqFilter" style="display:flex;gap:4px;margin-top:6px;margin-bottom:6px">
+        <button onclick="setFreqTab('all')" id="ftAll" style="flex:1;padding:4px;border:1px solid #3b82f6;background:#eff6ff;color:#3b82f6;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">전체</button>
+        <button onclick="setFreqTab('bonsa')" id="ftBonsa" style="flex:1;padding:4px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">본사</button>
+        <button onclick="setFreqTab('song')" id="ftSong" style="flex:1;padding:4px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">송림동</button>
+      </div>
+      <div id="freqList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- 가운데: 소재 정보 -->
+  <div style="width:280px;flex-shrink:0">
+    <div class="mat-card" id="matCard">
+      <h2>소재 정보</h2>
+      <div class="empty" id="matEmpty">← 카드를 클릭하거나<br>위에서 검색하세요</div>
+      <div id="matContent" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 이력 -->
+  <div class="right">
+    <div class="hist-header">
+      <h2>라벨 발송 이력</h2>
+      <span class="hist-count" id="histCount"></span>
+    </div>
+    <div class="hist-scroll" id="histScroll">
+      <div class="hist-empty" id="histEmpty">검색 결과가 여기에 표시됩니다</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ALL_DATA = [];
+let STOCK = {};  // 치수|재질 → 현재고
+let ALL_FREQ_ITEMS = [];  // 선생산 필요 전체 목록
+let freqTab = 'all';  // 'all', 'bonsa', 'song'
+
+const SHEET_ID = '1zkyYFiX5MGkGj7cnjhpiPvlzHLwN0CZKMFnjl9tTzqA';
+
+function loadData() {
+  // 1. 라벨조회 탭 로드
+  const cbLabel = '_loadLabel_' + Date.now();
+  window[cbLabel] = function(resp) {
+    delete window[cbLabel];
+    if (resp && resp.table && resp.table.rows) {
+      ALL_DATA = resp.table.rows.map(function(row) {
+        const v = function(i) { return row.c[i] ? (row.c[i].v || '') : ''; };
+        return {
+          customer: String(v(0)), order_no: String(v(1)),
+          order_date: String(v(2)).slice(0,10), ship_date: String(v(3)).slice(0,10),
+          chisu: String(v(4)), jaejil: String(v(5)),
+          pumok: String(v(6)), qty: parseInt(v(7)) || 0
+        };
+      });
+      console.log('Google Sheets 라벨 로드:', ALL_DATA.length + '건');
+    }
+  };
+  const sc1 = document.createElement('script');
+  sc1.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent('라벨조회')}&tqx=responseHandler:${cbLabel}`;
+  document.body.appendChild(sc1);
+
+  // 2. 재고현황 탭 로드
+  const cbStock = '_loadStock_' + Date.now();
+  window[cbStock] = function(resp) {
+    delete window[cbStock];
+    if (resp && resp.table && resp.table.rows) {
+      resp.table.rows.forEach(function(row) {
+        const v = function(i) { return row.c[i] ? (row.c[i].v || '') : ''; };
+        const chisu = String(v(0));
+        const jaejil = String(v(1));
+        const qty = parseInt(v(2)) || 0;
+        if (chisu && jaejil) STOCK[chisu + '|' + jaejil] = qty;
+      });
+      console.log('Google Sheets 재고 로드:', Object.keys(STOCK).length + '건');
+    }
+  };
+  const sc2 = document.createElement('script');
+  sc2.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent('재고현황')}&tqx=responseHandler:${cbStock}`;
+  document.body.appendChild(sc2);
+}
+
+function doSearch() {
+  const d1 = document.getElementById('inD1').value.trim();
+  const d2 = document.getElementById('inD2').value.trim();
+  const d3 = document.getElementById('inD3').value.trim();
+  const mat = document.getElementById('inMat').value;
+
+  if (!d1 && !d2) {
+    alert('내경 또는 외경을 입력하세요');
+    document.getElementById('inD1').focus();
+    return;
+  }
+
+  // 치수 조합
+  let searchChisu;
+  if (d3) {
+    searchChisu = d1 + '*' + d2 + '*' + d3;
+  } else if (d1 && d2) {
+    searchChisu = d1 + '*' + d2;
+  } else {
+    searchChisu = d1 || d2;
+  }
+
+  // 필터링
+  const results = ALL_DATA.filter(r => {
+    // 치수 매칭 (부분 매칭)
+    const chisuMatch = r.chisu && r.chisu.includes(searchChisu);
+    // 완전 매칭도 시도
+    const exactMatch = r.chisu === searchChisu;
+    // 소재 매칭
+    const matMatch = !mat || (r.jaejil && r.jaejil.startsWith(mat));
+
+    return (exactMatch || chisuMatch) && matMatch;
+  });
+
+  // 발송일 기준 최신순 정렬
+  results.sort((a, b) => (b.ship_date || '').localeCompare(a.ship_date || ''));
+
+  renderResults(results, searchChisu, mat);
+}
+
+function renderResults(results, chisu, mat) {
+  const matContent = document.getElementById('matContent');
+  const matEmpty = document.getElementById('matEmpty');
+  const histScroll = document.getElementById('histScroll');
+  const histCount = document.getElementById('histCount');
+  const histEmpty = document.getElementById('histEmpty');
+
+  if (results.length === 0) {
+    matEmpty.style.display = '';
+    matEmpty.innerHTML = '검색 결과 없음<br><span style="font-size:12px;color:#94a3b8">치수: ' + chisu + (mat ? ' / ' + mat : '') + '</span>';
+    matContent.style.display = 'none';
+    histScroll.innerHTML = '<div class="hist-empty">해당 치수/소재의 발송 이력이 없습니다</div>';
+    histCount.textContent = '';
+    return;
+  }
+
+  // 소재 카드
+  matEmpty.style.display = 'none';
+  matContent.style.display = '';
+
+  const totalQty = results.reduce((s, r) => s + (r.qty || 0), 0);
+  const custMap = {};
+  results.forEach(r => {
+    if (!custMap[r.customer]) custMap[r.customer] = { qty: 0, count: 0 };
+    custMap[r.customer].qty += (r.qty || 0);
+    custMap[r.customer].count++;
+  });
+  const custList = Object.entries(custMap).sort((a, b) => b[1].qty - a[1].qty);
+
+  // 재질별 분류
+  const jaejilMap = {};
+  results.forEach(r => {
+    const j = r.jaejil || '미상';
+    if (!jaejilMap[j]) jaejilMap[j] = 0;
+    jaejilMap[j] += (r.qty || 0);
+  });
+
+  // 최근 발송일
+  const latestDate = results[0] ? results[0].ship_date : '-';
+  const oldestDate = results[results.length - 1] ? results[results.length - 1].ship_date : '-';
+
+  // 재고 조회 (로컬 STOCK_LOOKUP 또는 Google Sheets STOCK)
+  const stockLookup = (typeof STOCK_LOOKUP !== 'undefined') ? STOCK_LOOKUP : STOCK;
+  const jaejilKeys = Object.keys(jaejilMap);
+  let stockInfo = [];
+  jaejilKeys.forEach(j => {
+    const key = chisu + '|' + j;
+    const qty = stockLookup[key];
+    stockInfo.push({ jaejil: j, stock: qty !== undefined ? qty : -1 });
+  });
+  // 소재 1개면 바로, 여러개면 전부 표시
+  const mainStock = stockInfo.length === 1 ? stockInfo[0].stock : -2;
+  const stockColor = mainStock <= 0 ? '#ef4444' : mainStock <= 10 ? '#ef4444' : mainStock <= 50 ? '#f59e0b' : '#22c55e';
+
+  matContent.innerHTML = `
+    <div style="background:${mainStock >= 0 ? (mainStock <= 10 ? '#fef2f2' : mainStock <= 50 ? '#fffbeb' : '#f0fdf4') : '#f8fafc'};border:2px solid ${mainStock >= 0 ? stockColor : '#e2e8f0'};border-radius:10px;padding:14px;text-align:center;margin-bottom:12px">
+      <div style="font-size:12px;color:#64748b;margin-bottom:4px">현재고</div>
+      ${mainStock >= 0
+        ? `<div style="font-size:36px;font-weight:900;color:${stockColor}">${mainStock}개</div>`
+        : stockInfo.length > 1
+          ? stockInfo.map(s => `<div style="font-size:20px;font-weight:800;color:${s.stock >= 0 ? (s.stock <= 10 ? '#ef4444' : s.stock <= 50 ? '#f59e0b' : '#22c55e') : '#94a3b8'}">${s.jaejil}: ${s.stock >= 0 ? s.stock + '개' : '미확인'}</div>`).join('')
+          : `<div style="font-size:24px;font-weight:800;color:#94a3b8">미확인</div>`
+      }
+    </div>
+    <div class="mat-info"><div class="mi-label">치수</div><div class="mi-value">${chisu}</div></div>
+    <div class="mat-info"><div class="mi-label">소재</div><div class="mi-value">${mat || '전체'} ${jaejilKeys.length > 1 ? '(' + jaejilKeys.join(', ') + ')' : ''}</div></div>
+    <div class="mat-stat">
+      <div class="stat-box info"><div class="sv">${results.length}</div><div class="sl">발송 건수</div></div>
+      <div class="stat-box ok"><div class="sv">${totalQty.toLocaleString()}</div><div class="sl">총 주문량</div></div>
+      <div class="stat-box"><div class="sv" style="font-size:14px;color:#334155">${latestDate}</div><div class="sl">최근 발송</div></div>
+      <div class="stat-box"><div class="sv" style="font-size:14px;color:#334155">${oldestDate}</div><div class="sl">최초 발송</div></div>
+    </div>
+    <div class="cust-list">
+      <h3>거래처별 (${custList.length}개)</h3>
+      ${custList.map(([name, info]) => `<div class="cust-item"><span class="cn">${name} <span style="color:#94a3b8;font-size:11px">(${info.count}회)</span></span><span class="cq">${info.qty.toLocaleString()}개</span></div>`).join('')}
+    </div>
+  `;
+
+  // 추천 생산량 계산 (총주문량 - 100일간 평균)
+  const avgQty = results.length > 0 ? Math.round(totalQty / results.length) : 0;
+  const stk = stockInfo.length > 0 && stockInfo[0].stock >= 0 ? stockInfo[0].stock : 0;
+  const suggestRaw = Math.max(0, totalQty - stk);
+  const suggestQty = Math.min(500, suggestRaw);
+  const suggestCeil = Math.ceil(suggestQty / 10) * 10;
+
+  // 이력 카드
+  histCount.textContent = results.length + '건';
+  histScroll.innerHTML = `<div class="suggest-box">
+      <div class="sg-label">최대 생산 추천량</div>
+      <div class="sg-value">${suggestCeil}개</div>
+      <div class="sg-detail">총주문 ${totalQty}개 − 현재고 ${stk}개 = ${suggestRaw}개${suggestRaw > 500 ? ' → 최대 500개 제한' : ''} (10단위 올림)</div>
+    </div>` + results.map(r => `<div class="hist-card">
+    <div class="hist-line1">
+      <span class="h-date">${r.ship_date || '-'}</span>
+      <span class="h-qty">${(r.qty || 0).toLocaleString()}개</span>
+    </div>
+    <div class="hist-line2">
+      <span class="h-cust">${r.customer || ''}</span> · ${r.jaejil}
+    </div>
+  </div>`).join('');
+}
+
+function doClear() {
+  document.getElementById('inD1').value = '';
+  document.getElementById('inD2').value = '';
+  document.getElementById('inD3').value = '';
+  document.getElementById('inMat').value = '';
+  document.getElementById('matEmpty').style.display = '';
+  document.getElementById('matEmpty').innerHTML = '치수를 입력하고<br>검색하세요';
+  document.getElementById('matContent').style.display = 'none';
+  document.getElementById('histScroll').innerHTML = '<div class="hist-empty">검색 결과가 여기에 표시됩니다</div>';
+  document.getElementById('histCount').textContent = '';
+  document.getElementById('inD1').focus();
+}
+
+// 선생산 필요 품목 카드 렌더링 (Google Sheets 선생산리스트 탭)
+function renderFreqCards() {
+  const freqList = document.getElementById('freqList');
+  const freqLoading = document.getElementById('freqLoading');
+
+  const cbName = '_loadProd_' + Date.now();
+  window[cbName] = function(resp) {
+    delete window[cbName];
+    freqLoading.textContent = '';
+    if (!resp || !resp.table || !resp.table.rows || !resp.table.rows.length) {
+      freqList.innerHTML = '<div style="color:#94a3b8;font-size:12px;text-align:center;padding:20px">선생산리스트 없음</div>';
+      return;
+    }
+    // 선생산리스트: 치수(0), 재질(1), 품목(2), 주문횟수(3), 총수량(4), 평균(5), 현재고(6), 재고율(7), 생산중(8), 점수(9), 거래처(10), 최근발주일(11), 송림동(12)
+    const items = resp.table.rows.map(function(row) {
+      const v = function(i) { return row.c[i] ? (row.c[i].v || '') : ''; };
+      return {
+        chisu: String(v(0)), jaejil: String(v(1)), pumok: String(v(2)),
+        freq: parseInt(v(3)) || 0, totalQty: parseInt(v(4)) || 0,
+        stock: parseInt(v(6)), stockRatio: parseFloat(v(7)) || 0,
+        inProd: String(v(8)), score: parseFloat(v(9)) || 0,
+        is_songnim: String(v(12)) === 'Y'
+      };
+    });
+
+    // 생산중=N이고 재고율 30% 이하인 품목만 (선생산 필요)
+    ALL_FREQ_ITEMS = items.filter(r => r.inProd !== 'Y' && r.stockRatio <= 30);
+    ALL_FREQ_ITEMS.sort((a, b) => b.score - a.score);
+    renderFreqList();
+  };
+  const sc = document.createElement('script');
+  sc.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent('선생산리스트')}&tqx=responseHandler:${cbName}`;
+  sc.onerror = function() {
+    freqLoading.textContent = '로드 실패';
+  };
+  document.body.appendChild(sc);
+}
+
+function setFreqTab(tab) {
+  freqTab = tab;
+  ['All','Bonsa','Song'].forEach(t => {
+    const btn = document.getElementById('ft' + t);
+    const isActive = t.toLowerCase() === tab || (t === 'All' && tab === 'all');
+    btn.style.background = isActive ? '#eff6ff' : '#fff';
+    btn.style.color = isActive ? '#3b82f6' : '#94a3b8';
+    btn.style.borderColor = isActive ? '#3b82f6' : '#e2e8f0';
+  });
+  renderFreqList();
+}
+
+function renderFreqList() {
+  const freqList = document.getElementById('freqList');
+  let active = ALL_FREQ_ITEMS;
+  if (freqTab === 'song') active = active.filter(r => r.is_songnim);
+  else if (freqTab === 'bonsa') active = active.filter(r => !r.is_songnim);
+
+  freqList.innerHTML = active.map(item => {
+    const stk = item.stock;
+    const hasStock = stk >= 0;
+    const stockClass = !hasStock ? 'unknown' : stk <= 10 ? 'danger' : stk <= 50 ? 'warn' : 'ok';
+    const stockText = hasStock ? stk + '개' : '-';
+    const jaejilClass = 'fi-' + item.jaejil.replace(/[^A-Z0-9]/g, '');
+    const pumokBadge = item.pumok && item.pumok !== 'W/R' ? ' <span style="font-size:9px;color:#6366f1;font-weight:700">' + item.pumok + '</span>' : '';
+    const songBadge = item.is_songnim ? ' <span style="font-size:9px;padding:1px 4px;border-radius:3px;background:#f59e0b22;color:#f59e0b;font-weight:700">송림</span>' : '';
+
+    return `<div class="freq-item" onclick="selectFreqCard('${item.chisu}','${item.jaejil}',this)">
+      <div class="fi-chisu">${item.chisu}${pumokBadge}${songBadge}</div>
+      <div class="fi-row">
+        <span class="fi-jaejil ${jaejilClass}">${item.jaejil}</span>
+        <span class="fi-info">${item.freq}회 / ${item.totalQty}개</span>
+      </div>
+      <div class="fi-stock ${stockClass}">재고: ${stockText}</div>
+    </div>`;
+  }).join('');
+
+  if (!active.length) {
+    freqList.innerHTML = '<div style="color:#22c55e;font-size:13px;text-align:center;padding:20px">선생산 필요 품목 없음!</div>';
+  }
+}
+
+function selectFreqCard(chisu, jaejil, el) {
+  // 카드 활성화 표시
+  document.querySelectorAll('.freq-item').forEach(e => e.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  // 입력칸에 반영
+  const parts = chisu.split('*');
+  document.getElementById('inD1').value = parts[0] || '';
+  document.getElementById('inD2').value = parts[1] || '';
+  document.getElementById('inD3').value = parts[2] || '';
+  document.getElementById('inMat').value = jaejil.replace(/\(.*/, '');  // CN10(xxx) → CN10
+
+  doSearch();
+}
+
+function toggleBlocklist() {
+  const panel = document.getElementById('blPanel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+}
+
+function renderBlocklist() {
+  const bl = (typeof BLOCKLIST !== 'undefined') ? BLOCKLIST : [];
+  document.getElementById('blCount').textContent = bl.length ? '(' + bl.length + ')' : '';
+  const list = document.getElementById('blList');
+  if (!bl.length) { list.innerHTML = '<span style="color:#64748b;font-size:13px">차단된 품목이 없습니다</span>'; return; }
+  list.innerHTML = bl.map(b => `<div style="background:#334155;border:1px solid #ef444466;border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:10px">
+    <span style="font-weight:800;font-size:15px;color:#f8fafc">${b.chisu}</span>
+    <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;background:#6b7280">${b.jaejil}</span>
+    <span style="font-size:11px;color:#94a3b8">${b.reason || ''}</span>
+  </div>`).join('');
+}
+
+// 페이지 로드
+window.onload = function() {
+  if (typeof DATA_LABEL !== 'undefined' && DATA_LABEL.length > 0) {
+    ALL_DATA = DATA_LABEL;
+    if (typeof STOCK_LOOKUP !== 'undefined') STOCK = STOCK_LOOKUP;
+    console.log('로컬 로드:', ALL_DATA.length + '건');
+    renderFreqCards();
+  } else {
+    loadData();
+    // Google Sheets 로드 후 카드 렌더링 (약간 딜레이)
+    setTimeout(renderFreqCards, 2000);
+  }
+  document.getElementById('inD1').focus();
+  renderBlocklist();
+};
+</script>
+</body>
+</html>
