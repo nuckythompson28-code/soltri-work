@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soltri Top100 품목별 적재 부피 시각화</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Malgun Gothic',sans-serif;background:#0f172a;color:#e2e8f0}
+.header{background:linear-gradient(135deg,#1e293b,#0f172a);padding:28px 40px;border-bottom:1px solid #334155}
+.header h1{font-size:26px;font-weight:700;color:#f8fafc}
+.header p{color:#94a3b8;margin-top:4px;font-size:13px}
+.container{max-width:1500px;margin:0 auto;padding:24px 32px}
+
+/* Summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+.s-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px 20px}
+.s-card.accent{border-color:#3b82f6;background:linear-gradient(135deg,#1e3a5f,#1e293b)}
+.s-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.8px}
+.s-val{font-size:26px;font-weight:700;color:#f8fafc;margin-top:2px}
+.s-sub{font-size:12px;color:#94a3b8;margin-top:2px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:20px}
+.tab{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#94a3b8;background:0;border:1px solid transparent;transition:.2s}
+.tab:hover{color:#e2e8f0;background:#1e293b}
+.tab.active{color:#f8fafc;background:#334155;border-color:#475569}
+.pane{display:none}.pane.active{display:block}
+
+/* 3D Stack View */
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.stack-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:18px;transition:transform .15s;cursor:default}
+.stack-card:hover{transform:translateY(-2px);border-color:#475569}
+.sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sc-chisu{font-size:16px;font-weight:700}
+.sc-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.sc-dims{font-size:12px;color:#94a3b8;margin-bottom:8px}
+.sc-vol{font-size:22px;font-weight:700;margin-bottom:4px}
+.sc-detail{font-size:11px;color:#64748b;line-height:1.6}
+
+/* 3D box */
+.box-scene{width:100%;height:100px;perspective:500px;margin:8px 0}
+.box-wrap{width:100%;height:100%;position:relative;transform-style:preserve-3d;display:flex;align-items:flex-end;justify-content:center}
+.box3d{position:relative;transform-style:preserve-3d;transform:rotateX(-15deg) rotateY(25deg)}
+.bface{position:absolute;border:1.5px solid rgba(255,255,255,.25)}
+.bf-front{transform:translateZ(calc(var(--d)/2))}
+.bf-back{transform:translateZ(calc(var(--d)/-2))}
+.bf-left{left:0;transform:rotateY(-90deg) translateZ(calc(var(--w)/2))}
+.bf-right{right:0;transform:rotateY(90deg) translateZ(calc(var(--w)/2))}
+.bf-top{top:0;transform:rotateX(90deg) translateZ(calc(var(--h)/2))}
+
+/* Bar Chart */
+.chart-area{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:24px;overflow-x:auto}
+.bars{display:flex;align-items:flex-end;gap:2px;height:320px;min-width:max-content;padding-bottom:60px;position:relative}
+.bar-col{display:flex;flex-direction:column;align-items:center;width:14px;position:relative}
+.bar-rect{width:100%;border-radius:2px 2px 0 0;cursor:pointer;position:relative;transition:opacity .15s}
+.bar-rect:hover{opacity:.75}
+.bar-lbl{position:absolute;top:100%;left:50%;transform:translateX(-50%) rotate(-55deg);transform-origin:top left;font-size:9px;color:#64748b;white-space:nowrap;margin-top:6px}
+.bar-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0f172a;border:1px solid #475569;border-radius:8px;padding:10px 14px;white-space:nowrap;z-index:100;font-size:12px;line-height:1.5;pointer-events:none}
+.bar-rect:hover .bar-tip{display:block}
+
+/* Bubble */
+.bubble-area{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:24px;position:relative;min-height:500px}
+.bubble{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:transform .15s;border:2px solid rgba(255,255,255,.2)}
+.bubble:hover{transform:scale(1.12);z-index:20}
+.bubble .b-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0f172a;border:1px solid #475569;border-radius:8px;padding:10px 14px;white-space:nowrap;z-index:100;font-size:12px;line-height:1.5;pointer-events:none}
+.bubble:hover .b-tip{display:block}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #334155}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#1e293b;color:#94a3b8;font-weight:600;padding:10px 12px;text-align:left;position:sticky;top:0;border-bottom:2px solid #334155;cursor:pointer;white-space:nowrap;user-select:none}
+thead th:hover{color:#e2e8f0}
+tbody td{padding:8px 12px;border-bottom:1px solid #1e293b;white-space:nowrap}
+tbody tr{background:#0f172a}tbody tr:nth-child(even){background:#131c2e}tbody tr:hover{background:#1e293b}
+.jb{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.lg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#94a3b8}
+.lg-dot{width:10px;height:10px;border-radius:3px}
+
+/* Filter */
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filters select,.filters input{background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:13px}
+
+@media(max-width:768px){.container{padding:16px}.stack-grid{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Top 100 빈도 제품 — 정사각 적재 부피 분석</h1>
+  <p>각 품목의 재고를 외경×폭 기준 정사각형으로 쌓았을 때 차지하는 공간</p>
+</div>
+<div class="container" id="app"></div>
+
+<script>
+const DATA = [{"rank": 36, "chisu": "182*190*20", "jaejil": "CN10", "freq": 13, "od": 182.0, "width": 190.0, "height": 20.0, "stock": 160, "side_count": 13, "layers": 1, "stack_w_mm": 2366.0, "stack_d_mm": 2470.0, "stack_h_mm": 20.0, "stack_w_cm": 236.6, "stack_d_cm": 247.0, "stack_h_cm": 2.0, "vol_cm3": 116880.4, "vol_L": 116.88, "score": 62.5, "stock_ratio": 20.0, "avg_qty": 61.7, "total_qty": 802}, {"rank": 83, "chisu": "100*105*55", "jaejil": "M/P", "freq": 9, "od": 100.0, "width": 105.0, "height": 55.0, "stock": 176, "side_count": 14, "layers": 1, "stack_w_mm": 1400.0, "stack_d_mm": 1470.0, "stack_h_mm": 55.0, "stack_w_cm": 140.0, "stack_d_cm": 147.0, "stack_h_cm": 5.5, "vol_cm3": 113190.0, "vol_L": 113.19, "score": 22.5, "stock_ratio": 84.6, "avg_qty": 23.1, "total_qty": 208}, {"rank": 97, "chisu": "207*215*25", "jaejil": "CM20", "freq": 8, "od": 207.0, "width": 215.0, "height": 25.0, "stock": 74, "side_count": 9, "layers": 1, "stack_w_mm": 1863.0, "stack_d_mm": 1935.0, "stack_h_mm": 25.0, "stack_w_cm": 186.3, "stack_d_cm": 193.5, "stack_h_cm": 2.5, "vol_cm3": 90122.6, "vol_L": 90.12, "score": 35.0, "stock_ratio": 25.0, "avg_qty": 37.0, "total_qty": 296}, {"rank": 38, "chisu": "270*290*45", "jaejil": "CG72", "freq": 13, "od": 270.0, "width": 290.0, "height": 45.0, "stock": 23, "side_count": 5, "layers": 1, "stack_w_mm": 1350.0, "stack_d_mm": 1450.0, "stack_h_mm": 45.0, "stack_w_cm": 135.0, "stack_d_cm": 145.0, "stack_h_cm": 4.5, "vol_cm3": 88087.5, "vol_L": 88.09, "score": 47.5, "stock_ratio": 50.0, "avg_qty": 23.9, "total_qty": 311}, {"rank": 82, "chisu": "100*110*80", "jaejil": "M/P", "freq": 9, "od": 100.0, "width": 110.0, "height": 80.0, "stock": 90, "side_count": 10, "layers": 1, "stack_w_mm": 1000.0, "stack_d_mm": 1100.0, "stack_h_mm": 80.0, "stack_w_cm": 100.0, "stack_d_cm": 110.0, "stack_h_cm": 8.0, "vol_cm3": 88000.0, "vol_L": 88.0, "score": 22.5, "stock_ratio": 83.3, "avg_qty": 12.0, "total_qty": 108}, {"rank": 13, "chisu": "143*150*20", "jaejil": "CN10", "freq": 17, "od": 143.0, "width": 150.0, "height": 20.0, "stock": 194, "side_count": 14, "layers": 1, "stack_w_mm": 2002.0, "stack_d_mm": 2100.0, "stack_h_mm": 20.0, "stack_w_cm": 200.2, "stack_d_cm": 210.0, "stack_h_cm": 2.0, "vol_cm3": 84084.0, "vol_L": 84.08, "score": 57.5, "stock_ratio": 28.0, "avg_qty": 40.8, "total_qty": 694}, {"rank": 69, "chisu": "162*170*25", "jaejil": "CM20", "freq": 9, "od": 162.0, "width": 170.0, "height": 25.0, "stock": 85, "side_count": 10, "layers": 1, "stack_w_mm": 1620.0, "stack_d_mm": 1700.0, "stack_h_mm": 25.0, "stack_w_cm": 162.0, "stack_d_cm": 170.0, "stack_h_cm": 2.5, "vol_cm3": 68850.0, "vol_L": 68.85, "score": 52.5, "stock_ratio": 10.3, "avg_qty": 91.4, "total_qty": 823}, {"rank": 23, "chisu": "80*85*15A", "jaejil": "CN10", "freq": 16, "od": 80.0, "width": 85.0, "height": 15.0, "stock": 554, "side_count": 24, "layers": 1, "stack_w_mm": 1920.0, "stack_d_mm": 2040.0, "stack_h_mm": 15.0, "stack_w_cm": 192.0, "stack_d_cm": 204.0, "stack_h_cm": 1.5, "vol_cm3": 58752.0, "vol_L": 58.75, "score": 40.0, "stock_ratio": 73.4, "avg_qty": 47.2, "total_qty": 755}, {"rank": 80, "chisu": "85*95*60", "jaejil": "M/P", "freq": 9, "od": 85.0, "width": 95.0, "height": 60.0, "stock": 121, "side_count": 11, "layers": 1, "stack_w_mm": 935.0, "stack_d_mm": 1045.0, "stack_h_mm": 60.0, "stack_w_cm": 93.5, "stack_d_cm": 104.5, "stack_h_cm": 6.0, "vol_cm3": 58624.5, "vol_L": 58.62, "score": 22.5, "stock_ratio": 119.8, "avg_qty": 11.2, "total_qty": 101}, {"rank": 33, "chisu": "105*110*9.5", "jaejil": "CN10", "freq": 14, "od": 105.0, "width": 110.0, "height": 9.5, "stock": 495, "side_count": 23, "layers": 1, "stack_w_mm": 2415.0, "stack_d_mm": 2530.0, "stack_h_mm": 9.5, "stack_w_cm": 241.5, "stack_d_cm": 253.0, "stack_h_cm": 0.9, "vol_cm3": 58044.5, "vol_L": 58.04, "score": 35.0, "stock_ratio": 275.0, "avg_qty": 12.9, "total_qty": 180}, {"rank": 91, "chisu": "135*140*19.8", "jaejil": "RS40", "freq": 8, "od": 135.0, "width": 140.0, "height": 19.8, "stock": 131, "side_count": 12, "layers": 1, "stack_w_mm": 1620.0, "stack_d_mm": 1680.0, "stack_h_mm": 19.8, "stack_w_cm": 162.0, "stack_d_cm": 168.0, "stack_h_cm": 2.0, "vol_cm3": 53887.7, "vol_L": 53.89, "score": 35.0, "stock_ratio": 21.0, "avg_qty": 78.0, "total_qty": 624}, {"rank": 39, "chisu": "158*165*25", "jaejil": "CM20", "freq": 13, "od": 158.0, "width": 165.0, "height": 25.0, "stock": 77, "side_count": 9, "layers": 1, "stack_w_mm": 1422.0, "stack_d_mm": 1485.0, "stack_h_mm": 25.0, "stack_w_cm": 142.2, "stack_d_cm": 148.5, "stack_h_cm": 2.5, "vol_cm3": 52791.8, "vol_L": 52.79, "score": 47.5, "stock_ratio": 40.5, "avg_qty": 14.6, "total_qty": 190}, {"rank": 66, "chisu": "60*65*40", "jaejil": "M/NW", "freq": 10, "od": 60.0, "width": 65.0, "height": 40.0, "stock": 291, "side_count": 18, "layers": 1, "stack_w_mm": 1080.0, "stack_d_mm": 1170.0, "stack_h_mm": 40.0, "stack_w_cm": 108.0, "stack_d_cm": 117.0, "stack_h_cm": 4.0, "vol_cm3": 50544.0, "vol_L": 50.54, "score": 25.0, "stock_ratio": 78.2, "avg_qty": 37.2, "total_qty": 372}, {"rank": 62, "chisu": "157*165*15", "jaejil": "RS40", "freq": 10, "od": 157.0, "width": 165.0, "height": 15.0, "stock": 112, "side_count": 11, "layers": 1, "stack_w_mm": 1727.0, "stack_d_mm": 1815.0, "stack_h_mm": 15.0, "stack_w_cm": 172.7, "stack_d_cm": 181.5, "stack_h_cm": 1.5, "vol_cm3": 47017.6, "vol_L": 47.02, "score": 40.0, "stock_ratio": 45.0, "avg_qty": 24.9, "total_qty": 249}, {"rank": 64, "chisu": "153*160*30", "jaejil": "CM20", "freq": 10, "od": 153.0, "width": 160.0, "height": 30.0, "stock": 57, "side_count": 8, "layers": 1, "stack_w_mm": 1224.0, "stack_d_mm": 1280.0, "stack_h_mm": 30.0, "stack_w_cm": 122.4, "stack_d_cm": 128.0, "stack_h_cm": 3.0, "vol_cm3": 47001.6, "vol_L": 47.0, "score": 25.0, "stock_ratio": 71.2, "avg_qty": 8.0, "total_qty": 80}, {"rank": 29, "chisu": "130*135*15", "jaejil": "CN10", "freq": 14, "od": 130.0, "width": 135.0, "height": 15.0, "stock": 167, "side_count": 13, "layers": 1, "stack_w_mm": 1690.0, "stack_d_mm": 1755.0, "stack_h_mm": 15.0, "stack_w_cm": 169.0, "stack_d_cm": 175.5, "stack_h_cm": 1.5, "vol_cm3": 44489.2, "vol_L": 44.49, "score": 50.0, "stock_ratio": 42.1, "avg_qty": 28.4, "total_qty": 397}, {"rank": 42, "chisu": "192*200*22.5", "jaejil": "CM20", "freq": 12, "od": 192.0, "width": 200.0, "height": 22.5, "stock": 46, "side_count": 7, "layers": 1, "stack_w_mm": 1344.0, "stack_d_mm": 1400.0, "stack_h_mm": 22.5, "stack_w_cm": 134.4, "stack_d_cm": 140.0, "stack_h_cm": 2.2, "vol_cm3": 42336.0, "vol_L": 42.34, "score": 45.0, "stock_ratio": 32.2, "avg_qty": 11.9, "total_qty": 143}, {"rank": 11, "chisu": "250*270*25", "jaejil": "RS20", "freq": 18, "od": 250.0, "width": 270.0, "height": 25.0, "stock": 23, "side_count": 5, "layers": 1, "stack_w_mm": 1250.0, "stack_d_mm": 1350.0, "stack_h_mm": 25.0, "stack_w_cm": 125.0, "stack_d_cm": 135.0, "stack_h_cm": 2.5, "vol_cm3": 42187.5, "vol_L": 42.19, "score": 60.0, "stock_ratio": 50.0, "avg_qty": 23.7, "total_qty": 427}, {"rank": 61, "chisu": "120*125*9.5", "jaejil": "RS40", "freq": 10, "od": 120.0, "width": 125.0, "height": 9.5, "stock": 283, "side_count": 17, "layers": 1, "stack_w_mm": 2040.0, "stack_d_mm": 2125.0, "stack_h_mm": 9.5, "stack_w_cm": 204.0, "stack_d_cm": 212.5, "stack_h_cm": 0.9, "vol_cm3": 41182.5, "vol_L": 41.18, "score": 40.0, "stock_ratio": 43.2, "avg_qty": 65.5, "total_qty": 655}, {"rank": 71, "chisu": "217*225*22.5", "jaejil": "CM20", "freq": 9, "od": 217.0, "width": 225.0, "height": 22.5, "stock": 29, "side_count": 6, "layers": 1, "stack_w_mm": 1302.0, "stack_d_mm": 1350.0, "stack_h_mm": 22.5, "stack_w_cm": 130.2, "stack_d_cm": 135.0, "stack_h_cm": 2.2, "vol_cm3": 39548.2, "vol_L": 39.55, "score": 52.5, "stock_ratio": 16.1, "avg_qty": 20.0, "total_qty": 180}, {"rank": 52, "chisu": "90*95*9.5A", "jaejil": "CM20", "freq": 11, "od": 90.0, "width": 95.0, "height": 9.5, "stock": 456, "side_count": 22, "layers": 1, "stack_w_mm": 1980.0, "stack_d_mm": 2090.0, "stack_h_mm": 9.5, "stack_w_cm": 198.0, "stack_d_cm": 209.0, "stack_h_cm": 0.9, "vol_cm3": 39312.9, "vol_L": 39.31, "score": 27.5, "stock_ratio": 57.7, "avg_qty": 71.8, "total_qty": 790}, {"rank": 59, "chisu": "125*130*15", "jaejil": "CM20", "freq": 10, "od": 125.0, "width": 130.0, "height": 15.0, "stock": 126, "side_count": 12, "layers": 1, "stack_w_mm": 1500.0, "stack_d_mm": 1560.0, "stack_h_mm": 15.0, "stack_w_cm": 150.0, "stack_d_cm": 156.0, "stack_h_cm": 1.5, "vol_cm3": 35100.0, "vol_L": 35.1, "score": 40.0, "stock_ratio": 40.4, "avg_qty": 31.2, "total_qty": 312}, {"rank": 20, "chisu": "114*120*30", "jaejil": "CN10", "freq": 16, "od": 114.0, "width": 120.0, "height": 30.0, "stock": 75, "side_count": 9, "layers": 1, "stack_w_mm": 1026.0, "stack_d_mm": 1080.0, "stack_h_mm": 30.0, "stack_w_cm": 102.6, "stack_d_cm": 108.0, "stack_h_cm": 3.0, "vol_cm3": 33242.4, "vol_L": 33.24, "score": 55.0, "stock_ratio": 36.1, "avg_qty": 13.0, "total_qty": 208}, {"rank": 14, "chisu": "95*100*15A", "jaejil": "CN10", "freq": 17, "od": 95.0, "width": 100.0, "height": 15.0, "stock": 215, "side_count": 15, "layers": 1, "stack_w_mm": 1425.0, "stack_d_mm": 1500.0, "stack_h_mm": 15.0, "stack_w_cm": 142.5, "stack_d_cm": 150.0, "stack_h_cm": 1.5, "vol_cm3": 32062.5, "vol_L": 32.06, "score": 42.5, "stock_ratio": 50.4, "avg_qty": 25.1, "total_qty": 427}, {"rank": 15, "chisu": "100*105*20", "jaejil": "CN10", "freq": 17, "od": 100.0, "width": 105.0, "height": 20.0, "stock": 129, "side_count": 12, "layers": 1, "stack_w_mm": 1200.0, "stack_d_mm": 1260.0, "stack_h_mm": 20.0, "stack_w_cm": 120.0, "stack_d_cm": 126.0, "stack_h_cm": 2.0, "vol_cm3": 30240.0, "vol_L": 30.24, "score": 42.5, "stock_ratio": 87.8, "avg_qty": 8.6, "total_qty": 147}, {"rank": 100, "chisu": "105*110*15", "jaejil": "CM20", "freq": 8, "od": 105.0, "width": 110.0, "height": 15.0, "stock": 162, "side_count": 13, "layers": 1, "stack_w_mm": 1365.0, "stack_d_mm": 1430.0, "stack_h_mm": 15.0, "stack_w_cm": 136.5, "stack_d_cm": 143.0, "stack_h_cm": 1.5, "vol_cm3": 29279.2, "vol_L": 29.28, "score": 20.0, "stock_ratio": 270.0, "avg_qty": 7.5, "total_qty": 60}, {"rank": 30, "chisu": "75*80*15A", "jaejil": "CN10", "freq": 14, "od": 75.0, "width": 80.0, "height": 15.0, "stock": 316, "side_count": 18, "layers": 1, "stack_w_mm": 1350.0, "stack_d_mm": 1440.0, "stack_h_mm": 15.0, "stack_w_cm": 135.0, "stack_d_cm": 144.0, "stack_h_cm": 1.5, "vol_cm3": 29160.0, "vol_L": 29.16, "score": 50.0, "stock_ratio": 40.8, "avg_qty": 55.3, "total_qty": 774}, {"rank": 49, "chisu": "80*85*20", "jaejil": "RS40", "freq": 11, "od": 80.0, "width": 85.0, "height": 20.0, "stock": 187, "side_count": 14, "layers": 1, "stack_w_mm": 1120.0, "stack_d_mm": 1190.0, "stack_h_mm": 20.0, "stack_w_cm": 112.0, "stack_d_cm": 119.0, "stack_h_cm": 2.0, "vol_cm3": 26656.0, "vol_L": 26.66, "score": 42.5, "stock_ratio": 40.0, "avg_qty": 42.5, "total_qty": 468}, {"rank": 24, "chisu": "99*105*25", "jaejil": "CN10", "freq": 15, "od": 99.0, "width": 105.0, "height": 25.0, "stock": 84, "side_count": 10, "layers": 1, "stack_w_mm": 990.0, "stack_d_mm": 1050.0, "stack_h_mm": 25.0, "stack_w_cm": 99.0, "stack_d_cm": 105.0, "stack_h_cm": 2.5, "vol_cm3": 25987.5, "vol_L": 25.99, "score": 67.5, "stock_ratio": 12.2, "avg_qty": 46.0, "total_qty": 690}, {"rank": 76, "chisu": "115*120*9.5", "jaejil": "CM20", "freq": 9, "od": 115.0, "width": 120.0, "height": 9.5, "stock": 181, "side_count": 14, "layers": 1, "stack_w_mm": 1610.0, "stack_d_mm": 1680.0, "stack_h_mm": 9.5, "stack_w_cm": 161.0, "stack_d_cm": 168.0, "stack_h_cm": 0.9, "vol_cm3": 25695.6, "vol_L": 25.7, "score": 37.5, "stock_ratio": 22.2, "avg_qty": 90.7, "total_qty": 816}, {"rank": 9, "chisu": "65*70*15A", "jaejil": "CN10", "freq": 19, "od": 65.0, "width": 70.0, "height": 15.0, "stock": 348, "side_count": 19, "layers": 1, "stack_w_mm": 1235.0, "stack_d_mm": 1330.0, "stack_h_mm": 15.0, "stack_w_cm": 123.5, "stack_d_cm": 133.0, "stack_h_cm": 1.5, "vol_cm3": 24638.2, "vol_L": 24.64, "score": 47.5, "stock_ratio": 50.1, "avg_qty": 36.5, "total_qty": 694}, {"rank": 81, "chisu": "152*160*19.8", "jaejil": "RS40", "freq": 9, "od": 152.0, "width": 160.0, "height": 19.8, "stock": 46, "side_count": 7, "layers": 1, "stack_w_mm": 1064.0, "stack_d_mm": 1120.0, "stack_h_mm": 19.8, "stack_w_cm": 106.4, "stack_d_cm": 112.0, "stack_h_cm": 2.0, "vol_cm3": 23595.3, "vol_L": 23.6, "score": 22.5, "stock_ratio": 71.9, "avg_qty": 7.1, "total_qty": 64}, {"rank": 60, "chisu": "95*100*9.5", "jaejil": "CM20", "freq": 10, "od": 95.0, "width": 100.0, "height": 9.5, "stock": 243, "side_count": 16, "layers": 1, "stack_w_mm": 1520.0, "stack_d_mm": 1600.0, "stack_h_mm": 9.5, "stack_w_cm": 152.0, "stack_d_cm": 160.0, "stack_h_cm": 0.9, "vol_cm3": 23104.0, "vol_L": 23.1, "score": 40.0, "stock_ratio": 28.1, "avg_qty": 86.4, "total_qty": 864}, {"rank": 65, "chisu": "100*105*15", "jaejil": "CM20", "freq": 10, "od": 100.0, "width": 105.0, "height": 15.0, "stock": 129, "side_count": 12, "layers": 1, "stack_w_mm": 1200.0, "stack_d_mm": 1260.0, "stack_h_mm": 15.0, "stack_w_cm": 120.0, "stack_d_cm": 126.0, "stack_h_cm": 1.5, "vol_cm3": 22680.0, "vol_L": 22.68, "score": 25.0, "stock_ratio": 161.2, "avg_qty": 8.0, "total_qty": 80}, {"rank": 88, "chisu": "99*105*15", "jaejil": "CM20", "freq": 8, "od": 99.0, "width": 105.0, "height": 15.0, "stock": 132, "side_count": 12, "layers": 1, "stack_w_mm": 1188.0, "stack_d_mm": 1260.0, "stack_h_mm": 15.0, "stack_w_cm": 118.8, "stack_d_cm": 126.0, "stack_h_cm": 1.5, "vol_cm3": 22453.2, "vol_L": 22.45, "score": 50.0, "stock_ratio": 13.7, "avg_qty": 120.8, "total_qty": 966}, {"rank": 22, "chisu": "200*220*20", "jaejil": "RS20", "freq": 16, "od": 200.0, "width": 220.0, "height": 20.0, "stock": 23, "side_count": 5, "layers": 1, "stack_w_mm": 1000.0, "stack_d_mm": 1100.0, "stack_h_mm": 20.0, "stack_w_cm": 100.0, "stack_d_cm": 110.0, "stack_h_cm": 2.0, "vol_cm3": 22000.0, "vol_L": 22.0, "score": 55.0, "stock_ratio": 50.0, "avg_qty": 23.2, "total_qty": 372}, {"rank": 50, "chisu": "120*125*9.5", "jaejil": "CM20", "freq": 11, "od": 120.0, "width": 125.0, "height": 9.5, "stock": 130, "side_count": 12, "layers": 1, "stack_w_mm": 1440.0, "stack_d_mm": 1500.0, "stack_h_mm": 9.5, "stack_w_cm": 144.0, "stack_d_cm": 150.0, "stack_h_cm": 0.9, "vol_cm3": 20520.0, "vol_L": 20.52, "score": 42.5, "stock_ratio": 40.0, "avg_qty": 29.5, "total_qty": 325}, {"rank": 34, "chisu": "40*45*14.8", "jaejil": "RS40", "freq": 14, "od": 40.0, "width": 45.0, "height": 14.8, "stock": 719, "side_count": 27, "layers": 1, "stack_w_mm": 1080.0, "stack_d_mm": 1215.0, "stack_h_mm": 14.8, "stack_w_cm": 108.0, "stack_d_cm": 121.5, "stack_h_cm": 1.5, "vol_cm3": 19420.6, "vol_L": 19.42, "score": 35.0, "stock_ratio": 140.4, "avg_qty": 36.6, "total_qty": 512}, {"rank": 16, "chisu": "60*65*15", "jaejil": "CN10", "freq": 17, "od": 60.0, "width": 65.0, "height": 15.0, "stock": 320, "side_count": 18, "layers": 1, "stack_w_mm": 1080.0, "stack_d_mm": 1170.0, "stack_h_mm": 15.0, "stack_w_cm": 108.0, "stack_d_cm": 117.0, "stack_h_cm": 1.5, "vol_cm3": 18954.0, "vol_L": 18.95, "score": 42.5, "stock_ratio": 71.4, "avg_qty": 26.4, "total_qty": 448}, {"rank": 1, "chisu": "84*90*25", "jaejil": "CN10", "freq": 28, "od": 84.0, "width": 90.0, "height": 25.0, "stock": 96, "side_count": 10, "layers": 1, "stack_w_mm": 840.0, "stack_d_mm": 900.0, "stack_h_mm": 25.0, "stack_w_cm": 84.0, "stack_d_cm": 90.0, "stack_h_cm": 2.5, "vol_cm3": 18900.0, "vol_L": 18.9, "score": 110.0, "stock_ratio": 9.8, "avg_qty": 34.9, "total_qty": 977}, {"rank": 2, "chisu": "60*65*10", "jaejil": "CN10", "freq": 23, "od": 60.0, "width": 65.0, "height": 10.0, "stock": 404, "side_count": 21, "layers": 1, "stack_w_mm": 1260.0, "stack_d_mm": 1365.0, "stack_h_mm": 10.0, "stack_w_cm": 126.0, "stack_d_cm": 136.5, "stack_h_cm": 1.0, "vol_cm3": 17199.0, "vol_L": 17.2, "score": 57.5, "stock_ratio": 67.9, "avg_qty": 25.9, "total_qty": 595}, {"rank": 47, "chisu": "94*100*15", "jaejil": "CN10", "freq": 11, "od": 94.0, "width": 100.0, "height": 15.0, "stock": 106, "side_count": 11, "layers": 1, "stack_w_mm": 1034.0, "stack_d_mm": 1100.0, "stack_h_mm": 15.0, "stack_w_cm": 103.4, "stack_d_cm": 110.0, "stack_h_cm": 1.5, "vol_cm3": 17061.0, "vol_L": 17.06, "score": 57.5, "stock_ratio": 19.9, "avg_qty": 48.5, "total_qty": 533}, {"rank": 12, "chisu": "173*180*15", "jaejil": "CM20", "freq": 17, "od": 173.0, "width": 180.0, "height": 15.0, "stock": 33, "side_count": 6, "layers": 1, "stack_w_mm": 1038.0, "stack_d_mm": 1080.0, "stack_h_mm": 15.0, "stack_w_cm": 103.8, "stack_d_cm": 108.0, "stack_h_cm": 1.5, "vol_cm3": 16815.6, "vol_L": 16.82, "score": 72.5, "stock_ratio": 18.5, "avg_qty": 10.5, "total_qty": 178}, {"rank": 79, "chisu": "130*135*9.5", "jaejil": "RS40", "freq": 9, "od": 130.0, "width": 135.0, "height": 9.5, "stock": 87, "side_count": 10, "layers": 1, "stack_w_mm": 1300.0, "stack_d_mm": 1350.0, "stack_h_mm": 9.5, "stack_w_cm": 130.0, "stack_d_cm": 135.0, "stack_h_cm": 0.9, "vol_cm3": 16672.5, "vol_L": 16.67, "score": 22.5, "stock_ratio": 271.9, "avg_qty": 3.6, "total_qty": 32}, {"rank": 53, "chisu": "55*60*20", "jaejil": "CN10", "freq": 11, "od": 55.0, "width": 60.0, "height": 20.0, "stock": 219, "side_count": 15, "layers": 1, "stack_w_mm": 825.0, "stack_d_mm": 900.0, "stack_h_mm": 20.0, "stack_w_cm": 82.5, "stack_d_cm": 90.0, "stack_h_cm": 2.0, "vol_cm3": 14850.0, "vol_L": 14.85, "score": 27.5, "stock_ratio": 58.6, "avg_qty": 34.0, "total_qty": 374}, {"rank": 41, "chisu": "70*75*19.5", "jaejil": "RS40", "freq": 12, "od": 70.0, "width": 75.0, "height": 19.5, "stock": 132, "side_count": 12, "layers": 1, "stack_w_mm": 840.0, "stack_d_mm": 900.0, "stack_h_mm": 19.5, "stack_w_cm": 84.0, "stack_d_cm": 90.0, "stack_h_cm": 1.9, "vol_cm3": 14742.0, "vol_L": 14.74, "score": 45.0, "stock_ratio": 34.1, "avg_qty": 32.2, "total_qty": 387}, {"rank": 63, "chisu": "160*165*15", "jaejil": "CM20", "freq": 10, "od": 160.0, "width": 165.0, "height": 15.0, "stock": 35, "side_count": 6, "layers": 1, "stack_w_mm": 960.0, "stack_d_mm": 990.0, "stack_h_mm": 15.0, "stack_w_cm": 96.0, "stack_d_cm": 99.0, "stack_h_cm": 1.5, "vol_cm3": 14256.0, "vol_L": 14.26, "score": 25.0, "stock_ratio": 62.5, "avg_qty": 5.6, "total_qty": 56}, {"rank": 51, "chisu": "120*125*9.5", "jaejil": "CN10", "freq": 11, "od": 120.0, "width": 125.0, "height": 9.5, "stock": 98, "side_count": 10, "layers": 1, "stack_w_mm": 1200.0, "stack_d_mm": 1250.0, "stack_h_mm": 9.5, "stack_w_cm": 120.0, "stack_d_cm": 125.0, "stack_h_cm": 0.9, "vol_cm3": 14250.0, "vol_L": 14.25, "score": 27.5, "stock_ratio": 75.4, "avg_qty": 11.8, "total_qty": 130}, {"rank": 18, "chisu": "104*110*25", "jaejil": "CM20", "freq": 16, "od": 104.0, "width": 110.0, "height": 25.0, "stock": 37, "side_count": 7, "layers": 1, "stack_w_mm": 728.0, "stack_d_mm": 770.0, "stack_h_mm": 25.0, "stack_w_cm": 72.8, "stack_d_cm": 77.0, "stack_h_cm": 2.5, "vol_cm3": 14014.0, "vol_L": 14.01, "score": 90.0, "stock_ratio": 3.9, "avg_qty": 59.1, "total_qty": 945}, {"rank": 4, "chisu": "79*85*20", "jaejil": "CN10", "freq": 21, "od": 79.0, "width": 85.0, "height": 20.0, "stock": 89, "side_count": 10, "layers": 1, "stack_w_mm": 790.0, "stack_d_mm": 850.0, "stack_h_mm": 20.0, "stack_w_cm": 79.0, "stack_d_cm": 85.0, "stack_h_cm": 2.0, "vol_cm3": 13430.0, "vol_L": 13.43, "score": 82.5, "stock_ratio": 14.8, "avg_qty": 28.7, "total_qty": 603}, {"rank": 8, "chisu": "60*65*20", "jaejil": "CN10", "freq": 19, "od": 60.0, "width": 65.0, "height": 20.0, "stock": 150, "side_count": 13, "layers": 1, "stack_w_mm": 780.0, "stack_d_mm": 845.0, "stack_h_mm": 20.0, "stack_w_cm": 78.0, "stack_d_cm": 84.5, "stack_h_cm": 2.0, "vol_cm3": 13182.0, "vol_L": 13.18, "score": 47.5, "stock_ratio": 86.7, "avg_qty": 9.1, "total_qty": 173}, {"rank": 96, "chisu": "99*105*25", "jaejil": "CM20", "freq": 8, "od": 99.0, "width": 105.0, "height": 25.0, "stock": 49, "side_count": 7, "layers": 1, "stack_w_mm": 693.0, "stack_d_mm": 735.0, "stack_h_mm": 25.0, "stack_w_cm": 69.3, "stack_d_cm": 73.5, "stack_h_cm": 2.5, "vol_cm3": 12733.9, "vol_L": 12.73, "score": 35.0, "stock_ratio": 39.2, "avg_qty": 15.6, "total_qty": 125}, {"rank": 32, "chisu": "63*68*14.8", "jaejil": "RS40", "freq": 14, "od": 63.0, "width": 68.0, "height": 14.8, "stock": 192, "side_count": 14, "layers": 1, "stack_w_mm": 882.0, "stack_d_mm": 952.0, "stack_h_mm": 14.8, "stack_w_cm": 88.2, "stack_d_cm": 95.2, "stack_h_cm": 1.5, "vol_cm3": 12427.0, "vol_L": 12.43, "score": 35.0, "stock_ratio": 55.7, "avg_qty": 24.6, "total_qty": 345}, {"rank": 5, "chisu": "50*55*19.5", "jaejil": "RS40", "freq": 20, "od": 50.0, "width": 55.0, "height": 19.5, "stock": 213, "side_count": 15, "layers": 1, "stack_w_mm": 750.0, "stack_d_mm": 825.0, "stack_h_mm": 19.5, "stack_w_cm": 75.0, "stack_d_cm": 82.5, "stack_h_cm": 1.9, "vol_cm3": 12065.6, "vol_L": 12.07, "score": 65.0, "stock_ratio": 43.3, "avg_qty": 24.6, "total_qty": 492}, {"rank": 87, "chisu": "75*80*20", "jaejil": "RS40", "freq": 8, "od": 75.0, "width": 80.0, "height": 20.0, "stock": 100, "side_count": 10, "layers": 1, "stack_w_mm": 750.0, "stack_d_mm": 800.0, "stack_h_mm": 20.0, "stack_w_cm": 75.0, "stack_d_cm": 80.0, "stack_h_cm": 2.0, "vol_cm3": 12000.0, "vol_L": 12.0, "score": 50.0, "stock_ratio": 17.4, "avg_qty": 71.8, "total_qty": 574}, {"rank": 84, "chisu": "123*130*20", "jaejil": "CN10", "freq": 9, "od": 123.0, "width": 130.0, "height": 20.0, "stock": 33, "side_count": 6, "layers": 1, "stack_w_mm": 738.0, "stack_d_mm": 780.0, "stack_h_mm": 20.0, "stack_w_cm": 73.8, "stack_d_cm": 78.0, "stack_h_cm": 2.0, "vol_cm3": 11512.8, "vol_L": 11.51, "score": 22.5, "stock_ratio": 122.2, "avg_qty": 3.0, "total_qty": 27}, {"rank": 17, "chisu": "65*70*9.5A", "jaejil": "CN10", "freq": 17, "od": 65.0, "width": 70.0, "height": 9.5, "stock": 230, "side_count": 16, "layers": 1, "stack_w_mm": 1040.0, "stack_d_mm": 1120.0, "stack_h_mm": 9.5, "stack_w_cm": 104.0, "stack_d_cm": 112.0, "stack_h_cm": 0.9, "vol_cm3": 11065.6, "vol_L": 11.07, "score": 42.5, "stock_ratio": 50.1, "avg_qty": 27.0, "total_qty": 459}, {"rank": 89, "chisu": "105*110*9.5", "jaejil": "CM20", "freq": 8, "od": 105.0, "width": 110.0, "height": 9.5, "stock": 88, "side_count": 10, "layers": 1, "stack_w_mm": 1050.0, "stack_d_mm": 1100.0, "stack_h_mm": 9.5, "stack_w_cm": 105.0, "stack_d_cm": 110.0, "stack_h_cm": 0.9, "vol_cm3": 10972.5, "vol_L": 10.97, "score": 50.0, "stock_ratio": 10.1, "avg_qty": 108.8, "total_qty": 870}, {"rank": 72, "chisu": "55*60*40", "jaejil": "M/NW", "freq": 9, "od": 55.0, "width": 60.0, "height": 40.0, "stock": 74, "side_count": 9, "layers": 1, "stack_w_mm": 495.0, "stack_d_mm": 540.0, "stack_h_mm": 40.0, "stack_w_cm": 49.5, "stack_d_cm": 54.0, "stack_h_cm": 4.0, "vol_cm3": 10692.0, "vol_L": 10.69, "score": 52.5, "stock_ratio": 17.5, "avg_qty": 47.1, "total_qty": 424}, {"rank": 44, "chisu": "30*34*30", "jaejil": "M/NW", "freq": 12, "od": 30.0, "width": 34.0, "height": 30.0, "stock": 305, "side_count": 18, "layers": 1, "stack_w_mm": 540.0, "stack_d_mm": 612.0, "stack_h_mm": 30.0, "stack_w_cm": 54.0, "stack_d_cm": 61.2, "stack_h_cm": 3.0, "vol_cm3": 9914.4, "vol_L": 9.91, "score": 30.0, "stock_ratio": 113.0, "avg_qty": 22.5, "total_qty": 270}, {"rank": 37, "chisu": "75*80*19.5", "jaejil": "RS40", "freq": 13, "od": 75.0, "width": 80.0, "height": 19.5, "stock": 76, "side_count": 9, "layers": 1, "stack_w_mm": 675.0, "stack_d_mm": 720.0, "stack_h_mm": 19.5, "stack_w_cm": 67.5, "stack_d_cm": 72.0, "stack_h_cm": 1.9, "vol_cm3": 9477.0, "vol_L": 9.48, "score": 47.5, "stock_ratio": 22.8, "avg_qty": 25.7, "total_qty": 334}, {"rank": 46, "chisu": "109*115*30", "jaejil": "CN10", "freq": 11, "od": 109.0, "width": 115.0, "height": 30.0, "stock": 21, "side_count": 5, "layers": 1, "stack_w_mm": 545.0, "stack_d_mm": 575.0, "stack_h_mm": 30.0, "stack_w_cm": 54.5, "stack_d_cm": 57.5, "stack_h_cm": 3.0, "vol_cm3": 9401.2, "vol_L": 9.4, "score": 67.5, "stock_ratio": 6.5, "avg_qty": 29.5, "total_qty": 325}, {"rank": 58, "chisu": "109*115*15", "jaejil": "CM20", "freq": 10, "od": 109.0, "width": 115.0, "height": 15.0, "stock": 47, "side_count": 7, "layers": 1, "stack_w_mm": 763.0, "stack_d_mm": 805.0, "stack_h_mm": 15.0, "stack_w_cm": 76.3, "stack_d_cm": 80.5, "stack_h_cm": 1.5, "vol_cm3": 9213.2, "vol_L": 9.21, "score": 65.0, "stock_ratio": 8.2, "avg_qty": 57.2, "total_qty": 572}, {"rank": 78, "chisu": "130*135*19.8", "jaejil": "RS40", "freq": 9, "od": 130.0, "width": 135.0, "height": 19.8, "stock": 21, "side_count": 5, "layers": 1, "stack_w_mm": 650.0, "stack_d_mm": 675.0, "stack_h_mm": 19.8, "stack_w_cm": 65.0, "stack_d_cm": 67.5, "stack_h_cm": 2.0, "vol_cm3": 8687.2, "vol_L": 8.69, "score": 37.5, "stock_ratio": 21.9, "avg_qty": 10.7, "total_qty": 96}, {"rank": 26, "chisu": "105*110*15A", "jaejil": "CN10", "freq": 15, "od": 105.0, "width": 110.0, "height": 15.0, "stock": 40, "side_count": 7, "layers": 1, "stack_w_mm": 735.0, "stack_d_mm": 770.0, "stack_h_mm": 15.0, "stack_w_cm": 73.5, "stack_d_cm": 77.0, "stack_h_cm": 1.5, "vol_cm3": 8489.2, "vol_L": 8.49, "score": 52.5, "stock_ratio": 35.4, "avg_qty": 7.5, "total_qty": 113}, {"rank": 40, "chisu": "65*71*50", "jaejil": "M/NW", "freq": 12, "od": 65.0, "width": 71.0, "height": 50.0, "stock": 27, "side_count": 6, "layers": 1, "stack_w_mm": 390.0, "stack_d_mm": 426.0, "stack_h_mm": 50.0, "stack_w_cm": 39.0, "stack_d_cm": 42.6, "stack_h_cm": 5.0, "vol_cm3": 8307.0, "vol_L": 8.31, "score": 80.0, "stock_ratio": 0.0, "avg_qty": 27.0, "total_qty": 324}, {"rank": 45, "chisu": "70*75*15", "jaejil": "CN10", "freq": 11, "od": 70.0, "width": 75.0, "height": 15.0, "stock": 82, "side_count": 10, "layers": 1, "stack_w_mm": 700.0, "stack_d_mm": 750.0, "stack_h_mm": 15.0, "stack_w_cm": 70.0, "stack_d_cm": 75.0, "stack_h_cm": 1.5, "vol_cm3": 7875.0, "vol_L": 7.88, "score": 67.5, "stock_ratio": 8.5, "avg_qty": 87.4, "total_qty": 961}, {"rank": 92, "chisu": "65*82.5*90*95", "jaejil": "CM20", "freq": 8, "od": 65.0, "width": 82.5, "height": 90.0, "stock": 11, "side_count": 4, "layers": 1, "stack_w_mm": 260.0, "stack_d_mm": 330.0, "stack_h_mm": 90.0, "stack_w_cm": 26.0, "stack_d_cm": 33.0, "stack_h_cm": 9.0, "vol_cm3": 7722.0, "vol_L": 7.72, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 11.1, "total_qty": 89}, {"rank": 6, "chisu": "90*95*25", "jaejil": "CN10", "freq": 19, "od": 90.0, "width": 95.0, "height": 25.0, "stock": 28, "side_count": 6, "layers": 1, "stack_w_mm": 540.0, "stack_d_mm": 570.0, "stack_h_mm": 25.0, "stack_w_cm": 54.0, "stack_d_cm": 57.0, "stack_h_cm": 2.5, "vol_cm3": 7695.0, "vol_L": 7.7, "score": 77.5, "stock_ratio": 14.0, "avg_qty": 10.5, "total_qty": 200}, {"rank": 95, "chisu": "65*82*90*100", "jaejil": "CM20", "freq": 8, "od": 65.0, "width": 82.0, "height": 90.0, "stock": 12, "side_count": 4, "layers": 1, "stack_w_mm": 260.0, "stack_d_mm": 328.0, "stack_h_mm": 90.0, "stack_w_cm": 26.0, "stack_d_cm": 32.8, "stack_h_cm": 9.0, "vol_cm3": 7675.2, "vol_L": 7.68, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 12.9, "total_qty": 103}, {"rank": 7, "chisu": "65*70*10", "jaejil": "CN10", "freq": 19, "od": 65.0, "width": 70.0, "height": 10.0, "stock": 124, "side_count": 12, "layers": 1, "stack_w_mm": 780.0, "stack_d_mm": 840.0, "stack_h_mm": 10.0, "stack_w_cm": 78.0, "stack_d_cm": 84.0, "stack_h_cm": 1.0, "vol_cm3": 6552.0, "vol_L": 6.55, "score": 62.5, "stock_ratio": 20.5, "avg_qty": 31.9, "total_qty": 606}, {"rank": 75, "chisu": "150*165*16", "jaejil": "RS20", "freq": 9, "od": 150.0, "width": 165.0, "height": 16.0, "stock": 11, "side_count": 4, "layers": 1, "stack_w_mm": 600.0, "stack_d_mm": 660.0, "stack_h_mm": 16.0, "stack_w_cm": 60.0, "stack_d_cm": 66.0, "stack_h_cm": 1.6, "vol_cm3": 6336.0, "vol_L": 6.34, "score": 37.5, "stock_ratio": 50.0, "avg_qty": 11.9, "total_qty": 107}, {"rank": 19, "chisu": "70*75*14.8", "jaejil": "RS40", "freq": 16, "od": 70.0, "width": 75.0, "height": 14.8, "stock": 73, "side_count": 9, "layers": 1, "stack_w_mm": 630.0, "stack_d_mm": 675.0, "stack_h_mm": 14.8, "stack_w_cm": 63.0, "stack_d_cm": 67.5, "stack_h_cm": 1.5, "vol_cm3": 6293.7, "vol_L": 6.29, "score": 80.0, "stock_ratio": 7.7, "avg_qty": 59.4, "total_qty": 951}, {"rank": 68, "chisu": "172*180*22.5", "jaejil": "CM20", "freq": 9, "od": 172.0, "width": 180.0, "height": 22.5, "stock": 8, "side_count": 3, "layers": 1, "stack_w_mm": 516.0, "stack_d_mm": 540.0, "stack_h_mm": 22.5, "stack_w_cm": 51.6, "stack_d_cm": 54.0, "stack_h_cm": 2.2, "vol_cm3": 6269.4, "vol_L": 6.27, "score": 62.5, "stock_ratio": 7.1, "avg_qty": 12.4, "total_qty": 112}, {"rank": 35, "chisu": "60*65*19.8", "jaejil": "RS40", "freq": 13, "od": 60.0, "width": 65.0, "height": 19.8, "stock": 68, "side_count": 9, "layers": 1, "stack_w_mm": 540.0, "stack_d_mm": 585.0, "stack_h_mm": 19.8, "stack_w_cm": 54.0, "stack_d_cm": 58.5, "stack_h_cm": 2.0, "vol_cm3": 6254.8, "vol_L": 6.25, "score": 62.5, "stock_ratio": 16.0, "avg_qty": 32.7, "total_qty": 425}, {"rank": 57, "chisu": "232*240*25", "jaejil": "CM20", "freq": 10, "od": 232.0, "width": 240.0, "height": 25.0, "stock": 3, "side_count": 2, "layers": 1, "stack_w_mm": 464.0, "stack_d_mm": 480.0, "stack_h_mm": 25.0, "stack_w_cm": 46.4, "stack_d_cm": 48.0, "stack_h_cm": 2.5, "vol_cm3": 5568.0, "vol_L": 5.57, "score": 75.0, "stock_ratio": 0.0, "avg_qty": 3.9, "total_qty": 39}, {"rank": 28, "chisu": "85*90*20", "jaejil": "RS40", "freq": 14, "od": 85.0, "width": 90.0, "height": 20.0, "stock": 33, "side_count": 6, "layers": 1, "stack_w_mm": 510.0, "stack_d_mm": 540.0, "stack_h_mm": 20.0, "stack_w_cm": 51.0, "stack_d_cm": 54.0, "stack_h_cm": 2.0, "vol_cm3": 5508.0, "vol_L": 5.51, "score": 75.0, "stock_ratio": 10.0, "avg_qty": 23.6, "total_qty": 330}, {"rank": 70, "chisu": "217*225*25", "jaejil": "CM20", "freq": 9, "od": 217.0, "width": 225.0, "height": 25.0, "stock": 4, "side_count": 2, "layers": 1, "stack_w_mm": 434.0, "stack_d_mm": 450.0, "stack_h_mm": 25.0, "stack_w_cm": 43.4, "stack_d_cm": 45.0, "stack_h_cm": 2.5, "vol_cm3": 4882.5, "vol_L": 4.88, "score": 52.5, "stock_ratio": 12.5, "avg_qty": 3.6, "total_qty": 32}, {"rank": 43, "chisu": "90*110*122*140", "jaejil": "CM20", "freq": 12, "od": 90.0, "width": 110.0, "height": 122.0, "stock": 4, "side_count": 2, "layers": 1, "stack_w_mm": 180.0, "stack_d_mm": 220.0, "stack_h_mm": 122.0, "stack_w_cm": 18.0, "stack_d_cm": 22.0, "stack_h_cm": 12.2, "vol_cm3": 4831.2, "vol_L": 4.83, "score": 45.0, "stock_ratio": 50.0, "avg_qty": 4.2, "total_qty": 51}, {"rank": 93, "chisu": "90*110*122*148", "jaejil": "CM20", "freq": 8, "od": 90.0, "width": 110.0, "height": 122.0, "stock": 3, "side_count": 2, "layers": 1, "stack_w_mm": 180.0, "stack_d_mm": 220.0, "stack_h_mm": 122.0, "stack_w_cm": 18.0, "stack_d_cm": 22.0, "stack_h_cm": 12.2, "vol_cm3": 4831.2, "vol_L": 4.83, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 3.5, "total_qty": 28}, {"rank": 25, "chisu": "60*65*14.8", "jaejil": "RS40", "freq": 15, "od": 60.0, "width": 65.0, "height": 14.8, "stock": 68, "side_count": 9, "layers": 1, "stack_w_mm": 540.0, "stack_d_mm": 585.0, "stack_h_mm": 14.8, "stack_w_cm": 54.0, "stack_d_cm": 58.5, "stack_h_cm": 1.5, "vol_cm3": 4675.3, "vol_L": 4.68, "score": 67.5, "stock_ratio": 12.3, "avg_qty": 36.7, "total_qty": 551}, {"rank": 3, "chisu": "56*61*15", "jaejil": "RS40", "freq": 22, "od": 56.0, "width": 61.0, "height": 15.0, "stock": 79, "side_count": 9, "layers": 1, "stack_w_mm": 504.0, "stack_d_mm": 549.0, "stack_h_mm": 15.0, "stack_w_cm": 50.4, "stack_d_cm": 54.9, "stack_h_cm": 1.5, "vol_cm3": 4150.4, "vol_L": 4.15, "score": 85.0, "stock_ratio": 11.5, "avg_qty": 31.3, "total_qty": 688}, {"rank": 48, "chisu": "130*150*22", "jaejil": "RS20", "freq": 11, "od": 130.0, "width": 150.0, "height": 22.0, "stock": 5, "side_count": 3, "layers": 1, "stack_w_mm": 390.0, "stack_d_mm": 450.0, "stack_h_mm": 22.0, "stack_w_cm": 39.0, "stack_d_cm": 45.0, "stack_h_cm": 2.2, "vol_cm3": 3861.0, "vol_L": 3.86, "score": 42.5, "stock_ratio": 50.0, "avg_qty": 5.0, "total_qty": 55}, {"rank": 77, "chisu": "152*160*9.5", "jaejil": "RS40", "freq": 9, "od": 152.0, "width": 160.0, "height": 9.5, "stock": 10, "side_count": 4, "layers": 1, "stack_w_mm": 608.0, "stack_d_mm": 640.0, "stack_h_mm": 9.5, "stack_w_cm": 60.8, "stack_d_cm": 64.0, "stack_h_cm": 0.9, "vol_cm3": 3696.6, "vol_L": 3.7, "score": 37.5, "stock_ratio": 31.2, "avg_qty": 3.6, "total_qty": 32}, {"rank": 90, "chisu": "104*110*12.5", "jaejil": "CN10", "freq": 8, "od": 104.0, "width": 110.0, "height": 12.5, "stock": 23, "side_count": 5, "layers": 1, "stack_w_mm": 520.0, "stack_d_mm": 550.0, "stack_h_mm": 12.5, "stack_w_cm": 52.0, "stack_d_cm": 55.0, "stack_h_cm": 1.2, "vol_cm3": 3575.0, "vol_L": 3.58, "score": 50.0, "stock_ratio": 15.5, "avg_qty": 18.5, "total_qty": 148}, {"rank": 31, "chisu": "32*37*14.8", "jaejil": "RS40", "freq": 14, "od": 32.0, "width": 37.0, "height": 14.8, "stock": 176, "side_count": 14, "layers": 1, "stack_w_mm": 448.0, "stack_d_mm": 518.0, "stack_h_mm": 14.8, "stack_w_cm": 44.8, "stack_d_cm": 51.8, "stack_h_cm": 1.5, "vol_cm3": 3434.5, "vol_L": 3.43, "score": 50.0, "stock_ratio": 26.0, "avg_qty": 48.4, "total_qty": 678}, {"rank": 10, "chisu": "58*63*10", "jaejil": "CN10", "freq": 18, "od": 58.0, "width": 63.0, "height": 10.0, "stock": 81, "side_count": 9, "layers": 1, "stack_w_mm": 522.0, "stack_d_mm": 567.0, "stack_h_mm": 10.0, "stack_w_cm": 52.2, "stack_d_cm": 56.7, "stack_h_cm": 1.0, "vol_cm3": 2959.7, "vol_L": 2.96, "score": 85.0, "stock_ratio": 9.3, "avg_qty": 48.2, "total_qty": 868}, {"rank": 73, "chisu": "175*195*20", "jaejil": "RS20", "freq": 9, "od": 175.0, "width": 195.0, "height": 20.0, "stock": 3, "side_count": 2, "layers": 1, "stack_w_mm": 350.0, "stack_d_mm": 390.0, "stack_h_mm": 20.0, "stack_w_cm": 35.0, "stack_d_cm": 39.0, "stack_h_cm": 2.0, "vol_cm3": 2730.0, "vol_L": 2.73, "score": 37.5, "stock_ratio": 50.0, "avg_qty": 3.8, "total_qty": 34}, {"rank": 85, "chisu": "28*33*15", "jaejil": "RS40", "freq": 9, "od": 28.0, "width": 33.0, "height": 15.0, "stock": 192, "side_count": 14, "layers": 1, "stack_w_mm": 392.0, "stack_d_mm": 462.0, "stack_h_mm": 15.0, "stack_w_cm": 39.2, "stack_d_cm": 46.2, "stack_h_cm": 1.5, "vol_cm3": 2716.6, "vol_L": 2.72, "score": 22.5, "stock_ratio": 53.6, "avg_qty": 39.8, "total_qty": 358}, {"rank": 21, "chisu": "130*145*16", "jaejil": "RS20", "freq": 16, "od": 130.0, "width": 145.0, "height": 16.0, "stock": 6, "side_count": 3, "layers": 1, "stack_w_mm": 390.0, "stack_d_mm": 435.0, "stack_h_mm": 16.0, "stack_w_cm": 39.0, "stack_d_cm": 43.5, "stack_h_cm": 1.6, "vol_cm3": 2714.4, "vol_L": 2.71, "score": 55.0, "stock_ratio": 50.0, "avg_qty": 6.9, "total_qty": 110}, {"rank": 54, "chisu": "22*25*20", "jaejil": "M/P", "freq": 11, "od": 22.0, "width": 25.0, "height": 20.0, "stock": 198, "side_count": 15, "layers": 1, "stack_w_mm": 330.0, "stack_d_mm": 375.0, "stack_h_mm": 20.0, "stack_w_cm": 33.0, "stack_d_cm": 37.5, "stack_h_cm": 2.0, "vol_cm3": 2475.0, "vol_L": 2.48, "score": 27.5, "stock_ratio": 196.0, "avg_qty": 9.2, "total_qty": 101}, {"rank": 98, "chisu": "70*86*95*160", "jaejil": "CM20", "freq": 8, "od": 70.0, "width": 86.0, "height": 95.0, "stock": 4, "side_count": 2, "layers": 1, "stack_w_mm": 140.0, "stack_d_mm": 172.0, "stack_h_mm": 95.0, "stack_w_cm": 14.0, "stack_d_cm": 17.2, "stack_h_cm": 9.5, "vol_cm3": 2287.6, "vol_L": 2.29, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 4.8, "total_qty": 38}, {"rank": 56, "chisu": "143*150*25", "jaejil": "CM20", "freq": 10, "od": 143.0, "width": 150.0, "height": 25.0, "stock": 3, "side_count": 2, "layers": 1, "stack_w_mm": 286.0, "stack_d_mm": 300.0, "stack_h_mm": 25.0, "stack_w_cm": 28.6, "stack_d_cm": 30.0, "stack_h_cm": 2.5, "vol_cm3": 2145.0, "vol_L": 2.15, "score": 75.0, "stock_ratio": 1.8, "avg_qty": 16.6, "total_qty": 166}, {"rank": 74, "chisu": "110*125*16", "jaejil": "RS20", "freq": 9, "od": 110.0, "width": 125.0, "height": 16.0, "stock": 5, "side_count": 3, "layers": 1, "stack_w_mm": 330.0, "stack_d_mm": 375.0, "stack_h_mm": 16.0, "stack_w_cm": 33.0, "stack_d_cm": 37.5, "stack_h_cm": 1.6, "vol_cm3": 1980.0, "vol_L": 1.98, "score": 37.5, "stock_ratio": 50.0, "avg_qty": 5.1, "total_qty": 46}, {"rank": 94, "chisu": "45*60*70*65", "jaejil": "CM20", "freq": 8, "od": 45.0, "width": 60.0, "height": 70.0, "stock": 8, "side_count": 3, "layers": 1, "stack_w_mm": 135.0, "stack_d_mm": 180.0, "stack_h_mm": 70.0, "stack_w_cm": 13.5, "stack_d_cm": 18.0, "stack_h_cm": 7.0, "vol_cm3": 1701.0, "vol_L": 1.7, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 8.2, "total_qty": 66}, {"rank": 27, "chisu": "155*160*15", "jaejil": "CM20", "freq": 14, "od": 155.0, "width": 160.0, "height": 15.0, "stock": 3, "side_count": 2, "layers": 1, "stack_w_mm": 310.0, "stack_d_mm": 320.0, "stack_h_mm": 15.0, "stack_w_cm": 31.0, "stack_d_cm": 32.0, "stack_h_cm": 1.5, "vol_cm3": 1488.0, "vol_L": 1.49, "score": 85.0, "stock_ratio": 1.2, "avg_qty": 17.2, "total_qty": 241}, {"rank": 99, "chisu": "50*65*70*60", "jaejil": "CM20", "freq": 8, "od": 50.0, "width": 65.0, "height": 70.0, "stock": 2, "side_count": 2, "layers": 1, "stack_w_mm": 100.0, "stack_d_mm": 130.0, "stack_h_mm": 70.0, "stack_w_cm": 10.0, "stack_d_cm": 13.0, "stack_h_cm": 7.0, "vol_cm3": 910.0, "vol_L": 0.91, "score": 35.0, "stock_ratio": 50.0, "avg_qty": 2.5, "total_qty": 20}, {"rank": 55, "chisu": "58*63*20", "jaejil": "CN10", "freq": 10, "od": 58.0, "width": 63.0, "height": 20.0, "stock": 9, "side_count": 3, "layers": 1, "stack_w_mm": 174.0, "stack_d_mm": 189.0, "stack_h_mm": 20.0, "stack_w_cm": 17.4, "stack_d_cm": 18.9, "stack_h_cm": 2.0, "vol_cm3": 657.7, "vol_L": 0.66, "score": 75.0, "stock_ratio": 3.5, "avg_qty": 26.0, "total_qty": 260}, {"rank": 86, "chisu": "19.05*22.23*20", "jaejil": "M/NW", "freq": 8, "od": 19.05, "width": 22.23, "height": 20.0, "stock": 62, "side_count": 8, "layers": 1, "stack_w_mm": 152.4, "stack_d_mm": 177.8, "stack_h_mm": 20.0, "stack_w_cm": 15.2, "stack_d_cm": 17.8, "stack_h_cm": 2.0, "vol_cm3": 542.1, "vol_L": 0.54, "score": 70.0, "stock_ratio": 0.0, "avg_qty": 62.5, "total_qty": 500}, {"rank": 67, "chisu": "18*21*20", "jaejil": "M/P", "freq": 9, "od": 18.0, "width": 21.0, "height": 20.0, "stock": 18, "side_count": 5, "layers": 1, "stack_w_mm": 90.0, "stack_d_mm": 105.0, "stack_h_mm": 20.0, "stack_w_cm": 9.0, "stack_d_cm": 10.5, "stack_h_cm": 2.0, "vol_cm3": 189.0, "vol_L": 0.19, "score": 72.5, "stock_ratio": 0.0, "avg_qty": 18.9, "total_qty": 170}];
+
+
+const JC={CN10:'#3b82f6',CN20:'#60a5fa',CM20:'#f59e0b',RS40:'#ef4444',RS20:'#f97316',CG72:'#8b5cf6','M/NW':'#06b6d4','M/P':'#14b8a6','M/T':'#84cc16','M/N':'#a3e635'};
+function jc(j){return JC[j]||'#64748b'}
+function fv(L){return L>=1?L.toFixed(1)+'L':(L*1000).toFixed(0)+'cm³'}
+
+function render(){
+const app=document.getElementById('app');
+const totalL=DATA.reduce((s,i)=>s+i.vol_L,0);
+const maxL=DATA[0].vol_L;
+const jaejils=[...new Set(DATA.map(d=>d.jaejil))];
+
+let h=`
+<div class="summary">
+  <div class="s-card accent"><div class="s-label">분석 제품</div><div class="s-val">${DATA.length}개</div><div class="s-sub">빈도 Top 100</div></div>
+  <div class="s-card"><div class="s-label">총 적재 부피</div><div class="s-val">${totalL.toFixed(0)}L</div><div class="s-sub">${(totalL/1000).toFixed(2)}m³</div></div>
+  <div class="s-card"><div class="s-label">최대 단일 품목</div><div class="s-val">${maxL.toFixed(1)}L</div><div class="s-sub">${DATA[0].chisu} (${DATA[0].jaejil})</div></div>
+  <div class="s-card"><div class="s-label">평균 부피</div><div class="s-val">${(totalL/DATA.length).toFixed(1)}L</div><div class="s-sub">품목당</div></div>
+  <div class="s-card"><div class="s-label">재질 종류</div><div class="s-val">${jaejils.length}종</div><div class="s-sub">${jaejils.join(', ')}</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="sw('cards')">적재 카드</div>
+  <div class="tab" onclick="sw('bar')">부피 차트</div>
+  <div class="tab" onclick="sw('bubble')">버블맵</div>
+  <div class="tab" onclick="sw('table')">전체 테이블</div>
+</div>`;
+
+// === CARDS ===
+h+=`<div class="pane active" id="p-cards">`;
+h+=`<div class="legend">${jaejils.map(j=>`<div class="lg-item"><div class="lg-dot" style="background:${jc(j)}"></div>${j}</div>`).join('')}</div>`;
+h+=`<div class="filters">
+  <select id="fJaejil" onchange="filterCards()"><option value="">전체 재질</option>${jaejils.map(j=>`<option>${j}</option>`).join('')}</select>
+  <select id="fSort" onchange="filterCards()">
+    <option value="vol">부피순</option><option value="freq">빈도순</option><option value="stock">재고순</option><option value="chisu">치수순</option>
+  </select>
+</div>`;
+h+=`<div class="stack-grid" id="cardGrid">`;
+DATA.forEach((d,idx)=>{
+  const c=jc(d.jaejil);
+  // 3D box proportions (scale to fit ~90px max dim)
+  const mx=Math.max(d.stack_w_cm,d.stack_d_cm,d.stack_h_cm);
+  const sc=70/mx;
+  const bw=Math.max(12,d.stack_w_cm*sc), bd=Math.max(8,d.stack_d_cm*sc), bh=Math.max(6,d.stack_h_cm*sc);
+
+  h+=`<div class="stack-card" data-j="${d.jaejil}" data-vol="${d.vol_L}" data-freq="${d.freq}" data-stock="${d.stock}" data-chisu="${d.chisu}">
+    <div class="sc-head">
+      <span class="sc-chisu" style="color:${c}">${d.chisu}</span>
+      <span class="sc-badge" style="background:${c}22;color:${c}">${d.jaejil}</span>
+    </div>
+    <div class="sc-dims">재고 ${d.stock}개 → ${d.side_count}×${d.side_count} 정사각 × ${d.layers}층</div>
+    <div class="box-scene">
+      <div class="box-wrap">
+        <div class="box3d" style="width:${bw}px;height:${bh}px;--w:${bw}px;--h:${bh}px;--d:${bd}px">
+          <div class="bface bf-front" style="width:${bw}px;height:${bh}px;background:${c}33;border-color:${c}66"></div>
+          <div class="bface bf-back" style="width:${bw}px;height:${bh}px;background:${c}11;border-color:${c}44"></div>
+          <div class="bface bf-left" style="width:${bd}px;height:${bh}px;background:${c}22;border-color:${c}55"></div>
+          <div class="bface bf-right" style="width:${bd}px;height:${bh}px;background:${c}22;border-color:${c}55"></div>
+          <div class="bface bf-top" style="width:${bw}px;height:${bd}px;background:${c}44;border-color:${c}77"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sc-vol" style="color:${c}">${fv(d.vol_L)}</div>
+    <div class="sc-detail">
+      가로 ${d.stack_w_cm}cm × 세로 ${d.stack_d_cm}cm × 높이 ${d.stack_h_cm}cm<br>
+      개당 ${d.od}×${d.width}×${d.height}mm | 빈도 ${d.freq}회 | 점수 ${d.score}
+    </div>
+  </div>`;
+});
+h+=`</div></div>`;
+
+// === BAR CHART ===
+h+=`<div class="pane" id="p-bar">`;
+h+=`<div class="legend">${jaejils.map(j=>`<div class="lg-item"><div class="lg-dot" style="background:${jc(j)}"></div>${j}</div>`).join('')}</div>`;
+h+=`<div class="chart-area"><div class="bars">`;
+DATA.forEach(d=>{
+  const pct=Math.max(2,(d.vol_L/maxL)*280);
+  const c=jc(d.jaejil);
+  h+=`<div class="bar-col">
+    <div class="bar-rect" style="height:${pct}px;background:${c}">
+      <div class="bar-tip">
+        <strong>${d.chisu}</strong> (${d.jaejil})<br>
+        부피: ${fv(d.vol_L)}<br>
+        ${d.stack_w_cm}×${d.stack_d_cm}×${d.stack_h_cm}cm<br>
+        재고: ${d.stock}개 (${d.side_count}²×${d.layers}층)<br>
+        빈도: ${d.freq}회
+      </div>
+    </div>
+    <div class="bar-lbl">${d.chisu}</div>
+  </div>`;
+});
+h+=`</div></div></div>`;
+
+// === BUBBLE ===
+h+=`<div class="pane" id="p-bubble">`;
+h+=`<div class="legend">${jaejils.map(j=>`<div class="lg-item"><div class="lg-dot" style="background:${jc(j)}"></div>${j}</div>`).join('')}</div>`;
+h+=`<div style="font-size:12px;color:#64748b;margin-bottom:8px">X축: 빈도(회) | Y축: 재고(개) | 크기: 적재 부피</div>`;
+h+=`<div class="bubble-area" id="bubbleArea" style="height:520px">`;
+const minFreq=Math.min(...DATA.map(d=>d.freq)), maxFreq=Math.max(...DATA.map(d=>d.freq));
+const maxStock=Math.max(...DATA.map(d=>d.stock));
+const maxR=Math.sqrt(maxL)*4;
+DATA.forEach(d=>{
+  const c=jc(d.jaejil);
+  const r=Math.max(14,Math.sqrt(d.vol_L/maxL)*60);
+  const x=20+((d.freq-minFreq)/(maxFreq-minFreq||1))*85;
+  const y=85-((d.stock)/(maxStock||1))*75;
+  h+=`<div class="bubble" style="width:${r*2}px;height:${r*2}px;left:${x}%;top:${y}%;background:${c}33;border-color:${c}88;margin-left:${-r}px;margin-top:${-r}px">
+    <div style="font-size:${Math.max(7,Math.min(11,r/3))}px;color:${c};font-weight:600;line-height:1.2">${d.chisu}<br><span style="font-size:${Math.max(6,r/4)}px;opacity:.7">${fv(d.vol_L)}</span></div>
+    <div class="b-tip">
+      <strong>${d.chisu}</strong> (${d.jaejil})<br>
+      적재부피: ${fv(d.vol_L)}<br>
+      ${d.stack_w_cm}×${d.stack_d_cm}×${d.stack_h_cm}cm<br>
+      재고: ${d.stock}개 | 빈도: ${d.freq}회
+    </div>
+  </div>`;
+});
+// Axis labels
+h+=`<div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:11px;color:#64748b">빈도 (회) →</div>`;
+h+=`<div style="position:absolute;left:8px;top:50%;transform:translateY(-50%) rotate(-90deg);font-size:11px;color:#64748b">재고 (개) →</div>`;
+h+=`</div></div>`;
+
+// === TABLE ===
+h+=`<div class="pane" id="p-table">`;
+h+=`<div class="tbl-wrap"><table id="tbl">
+<thead><tr>
+  <th onclick="st(0)">#</th>
+  <th onclick="st(1)">치수</th>
+  <th onclick="st(2)">재질</th>
+  <th onclick="st(3)">빈도</th>
+  <th onclick="st(4)">재고</th>
+  <th onclick="st(5)">배열</th>
+  <th onclick="st(6)">가로cm</th>
+  <th onclick="st(7)">세로cm</th>
+  <th onclick="st(8)">높이cm</th>
+  <th onclick="st(9)">부피(L)</th>
+  <th onclick="st(10)">점수</th>
+</tr></thead><tbody>`;
+DATA.forEach((d,i)=>{
+  const c=jc(d.jaejil);
+  h+=`<tr>
+    <td>${i+1}</td>
+    <td><strong>${d.chisu}</strong></td>
+    <td><span class="jb" style="background:${c}22;color:${c}">${d.jaejil}</span></td>
+    <td>${d.freq}회</td>
+    <td>${d.stock}개</td>
+    <td>${d.side_count}×${d.side_count}×${d.layers}</td>
+    <td>${d.stack_w_cm}</td>
+    <td>${d.stack_d_cm}</td>
+    <td>${d.stack_h_cm}</td>
+    <td><strong>${d.vol_L.toFixed(1)}</strong></td>
+    <td>${d.score}</td>
+  </tr>`;
+});
+h+=`</tbody></table></div></div>`;
+
+app.innerHTML=h;
+}
+
+function sw(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function filterCards(){
+  const j=document.getElementById('fJaejil').value;
+  const s=document.getElementById('fSort').value;
+  const grid=document.getElementById('cardGrid');
+  const cards=[...grid.children];
+  cards.forEach(c=>{
+    const show=!j||c.dataset.j===j;
+    c.style.display=show?'':'none';
+  });
+  const key={vol:'vol',freq:'freq',stock:'stock',chisu:'chisu'}[s];
+  cards.sort((a,b)=>{
+    if(key==='chisu')return a.dataset.chisu.localeCompare(b.dataset.chisu);
+    return parseFloat(b.dataset[key])-parseFloat(a.dataset[key]);
+  });
+  cards.forEach(c=>grid.appendChild(c));
+}
+
+let sc=-1,sa=true;
+function st(col){
+  const tb=document.querySelector('#tbl tbody');
+  const rows=[...tb.querySelectorAll('tr')];
+  if(sc===col)sa=!sa;else{sc=col;sa=col<=2}
+  rows.sort((a,b)=>{
+    let av=a.cells[col].textContent,bv=b.cells[col].textContent;
+    if(col===1||col===2||col===5)return sa?av.localeCompare(bv):bv.localeCompare(av);
+    av=parseFloat(av.replace(/[^0-9.\-]/g,''));bv=parseFloat(bv.replace(/[^0-9.\-]/g,''));
+    return sa?av-bv:bv-av;
+  });
+  rows.forEach(r=>tb.appendChild(r));
+}
+
+render();
+</script>
+</body>
+</html>

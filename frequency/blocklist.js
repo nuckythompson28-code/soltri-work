@@ -1,0 +1,1 @@
+var BLOCKLIST = [{"chisu":"75*80*9.5A","jaejil":"CM20","reason":"디와이파워 전용 규격"},{"chisu":"75*80*20","jaejil":"CM20","reason":"디와이파워 전용 규격"},{"chisu":"84*90*25","jaejil":"CM20","reason":"디와이파워 전용 규격"}];

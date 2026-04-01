@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soltri Top100 빈도 제품 부피 분석</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; }
+
+  .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 32px 40px; border-bottom: 1px solid #334155; }
+  .header h1 { font-size: 28px; font-weight: 700; color: #f8fafc; }
+  .header p { color: #94a3b8; margin-top: 6px; font-size: 14px; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 40px; }
+
+  /* Summary Cards */
+  .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+  .card-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .card-value { font-size: 28px; font-weight: 700; color: #f8fafc; }
+  .card-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+  .card.highlight { border-color: #3b82f6; background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); }
+
+  /* Section */
+  .section { margin-bottom: 40px; }
+  .section-title { font-size: 20px; font-weight: 600; color: #f8fafc; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .section-title .badge { background: #3b82f6; color: white; font-size: 12px; padding: 2px 10px; border-radius: 20px; }
+
+  /* Box Visualization */
+  .box-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .box-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; position: relative; overflow: hidden; }
+  .box-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .box-card.small::before { background: #22c55e; }
+  .box-card.medium::before { background: #f59e0b; }
+  .box-card.large::before { background: #ef4444; }
+  .box-card.xlarge::before { background: #8b5cf6; }
+
+  .box-3d { width: 120px; height: 100px; margin: 16px auto; position: relative; perspective: 400px; }
+  .box-3d .face { position: absolute; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+  .box-3d .front { width: 80px; height: 60px; bottom: 0; left: 20px; transform: skewY(-5deg); }
+  .box-3d .side { width: 30px; height: 60px; bottom: 0; right: 10px; transform: skewY(10deg); }
+  .box-3d .top { width: 80px; height: 25px; top: 10px; left: 20px; transform: skewX(-20deg) skewY(-5deg); }
+  .box-card.small .face { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.4); color: #22c55e; }
+  .box-card.medium .face { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #f59e0b; }
+  .box-card.large .face { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #ef4444; }
+  .box-card.xlarge .face { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: #8b5cf6; }
+
+  .box-info { text-align: center; }
+  .box-info .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .box-info .dims { font-size: 13px; color: #94a3b8; }
+  .box-info .vol { font-size: 14px; color: #64748b; margin-top: 2px; }
+  .box-stats { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .box-stat { text-align: center; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+  .box-stat .val { font-size: 20px; font-weight: 700; }
+  .box-stat .lbl { font-size: 11px; color: #64748b; }
+  .fill-bar { margin-top: 12px; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+  .fill-bar .fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .fill-pct { font-size: 12px; color: #94a3b8; margin-top: 4px; text-align: right; }
+
+  /* Chart */
+  .chart-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 3px; height: 200px; padding-top: 20px; }
+  .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .bar { width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; position: relative; cursor: pointer; transition: opacity 0.2s; }
+  .bar:hover { opacity: 0.8; }
+  .bar-label { font-size: 8px; color: #64748b; margin-top: 4px; writing-mode: vertical-rl; text-orientation: mixed; max-height: 60px; overflow: hidden; }
+  .tooltip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 10px 14px; white-space: nowrap; z-index: 100; font-size: 12px; pointer-events: none; }
+  .bar:hover .tooltip { display: block; }
+
+  /* Treemap */
+  .treemap { display: flex; flex-wrap: wrap; gap: 3px; border-radius: 12px; overflow: hidden; }
+  .treemap-item { display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 4px; position: relative; transition: transform 0.15s; min-height: 40px; padding: 4px; }
+  .treemap-item:hover { transform: scale(1.05); z-index: 10; }
+  .treemap-item .tm-tooltip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 10px 14px; white-space: nowrap; z-index: 100; font-size: 12px; pointer-events: none; }
+  .treemap-item:hover .tm-tooltip { display: block; }
+
+  /* Material Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #334155; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #1e293b; color: #94a3b8; font-weight: 600; padding: 12px 14px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid #334155; white-space: nowrap; cursor: pointer; }
+  thead th:hover { color: #e2e8f0; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #1e293b; white-space: nowrap; }
+  tbody tr { background: #0f172a; }
+  tbody tr:nth-child(even) { background: #131c2e; }
+  tbody tr:hover { background: #1e293b; }
+  .size-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .size-s { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .size-m { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .size-l { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+  .jaejil-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+
+  /* Tab */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tab { padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #94a3b8; background: transparent; border: 1px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: #e2e8f0; background: #1e293b; }
+  .tab.active { color: #f8fafc; background: #334155; border-color: #475569; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 16px; }
+    .header { padding: 20px; }
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+    .box-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Soltri 빈도 Top 100 제품 부피 분석</h1>
+  <p>3개월 주문 빈도 상위 100개 제품의 외경×폭 기반 부피 산출 및 박스 적재 시뮬레이션</p>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+const DATA = [{"rank": 1, "chisu": "84*90*25", "jaejil": "CN10", "freq": 28, "od": 84.0, "width": 90.0, "height": 25.0, "box_side": 90.0, "vol_per_piece_cm3": 202.5, "avg_qty": 34.9, "stock": 96, "total_qty": 977, "total_vol_cm3": 7067.2, "score": 110.0, "stock_ratio": 9.8}, {"rank": 2, "chisu": "60*65*10", "jaejil": "CN10", "freq": 23, "od": 60.0, "width": 65.0, "height": 10.0, "box_side": 65.0, "vol_per_piece_cm3": 42.2, "avg_qty": 25.9, "stock": 404, "total_qty": 595, "total_vol_cm3": 1094.3, "score": 57.5, "stock_ratio": 67.9}, {"rank": 3, "chisu": "56*61*15", "jaejil": "RS40", "freq": 22, "od": 56.0, "width": 61.0, "height": 15.0, "box_side": 61.0, "vol_per_piece_cm3": 55.8, "avg_qty": 31.3, "stock": 79, "total_qty": 688, "total_vol_cm3": 1747.0, "score": 85.0, "stock_ratio": 11.5}, {"rank": 4, "chisu": "79*85*20", "jaejil": "CN10", "freq": 21, "od": 79.0, "width": 85.0, "height": 20.0, "box_side": 85.0, "vol_per_piece_cm3": 144.5, "avg_qty": 28.7, "stock": 89, "total_qty": 603, "total_vol_cm3": 4147.1, "score": 82.5, "stock_ratio": 14.8}, {"rank": 5, "chisu": "50*55*19.5", "jaejil": "RS40", "freq": 20, "od": 50.0, "width": 55.0, "height": 19.5, "box_side": 55.0, "vol_per_piece_cm3": 59.0, "avg_qty": 24.6, "stock": 213, "total_qty": 492, "total_vol_cm3": 1451.1, "score": 65.0, "stock_ratio": 43.3}, {"rank": 6, "chisu": "90*95*25", "jaejil": "CN10", "freq": 19, "od": 90.0, "width": 95.0, "height": 25.0, "box_side": 95.0, "vol_per_piece_cm3": 225.6, "avg_qty": 10.5, "stock": 28, "total_qty": 200, "total_vol_cm3": 2369.1, "score": 77.5, "stock_ratio": 14.0}, {"rank": 7, "chisu": "65*70*10", "jaejil": "CN10", "freq": 19, "od": 65.0, "width": 70.0, "height": 10.0, "box_side": 70.0, "vol_per_piece_cm3": 49.0, "avg_qty": 31.9, "stock": 124, "total_qty": 606, "total_vol_cm3": 1563.1, "score": 62.5, "stock_ratio": 20.5}, {"rank": 8, "chisu": "60*65*20", "jaejil": "CN10", "freq": 19, "od": 60.0, "width": 65.0, "height": 20.0, "box_side": 65.0, "vol_per_piece_cm3": 84.5, "avg_qty": 9.1, "stock": 150, "total_qty": 173, "total_vol_cm3": 768.9, "score": 47.5, "stock_ratio": 86.7}, {"rank": 9, "chisu": "65*70*15A", "jaejil": "CN10", "freq": 19, "od": 65.0, "width": 70.0, "height": 15.0, "box_side": 70.0, "vol_per_piece_cm3": 73.5, "avg_qty": 36.5, "stock": 348, "total_qty": 694, "total_vol_cm3": 2682.8, "score": 47.5, "stock_ratio": 50.1}, {"rank": 10, "chisu": "58*63*10", "jaejil": "CN10", "freq": 18, "od": 58.0, "width": 63.0, "height": 10.0, "box_side": 63.0, "vol_per_piece_cm3": 39.7, "avg_qty": 48.2, "stock": 81, "total_qty": 868, "total_vol_cm3": 1913.1, "score": 85.0, "stock_ratio": 9.3}, {"rank": 11, "chisu": "250*270*25", "jaejil": "RS20", "freq": 18, "od": 250.0, "width": 270.0, "height": 25.0, "box_side": 270.0, "vol_per_piece_cm3": 1822.5, "avg_qty": 23.7, "stock": -1, "total_qty": 427, "total_vol_cm3": 43193.2, "score": 60.0, "stock_ratio": 50.0}, {"rank": 12, "chisu": "173*180*15", "jaejil": "CM20", "freq": 17, "od": 173.0, "width": 180.0, "height": 15.0, "box_side": 180.0, "vol_per_piece_cm3": 486.0, "avg_qty": 10.5, "stock": 33, "total_qty": 178, "total_vol_cm3": 5103.0, "score": 72.5, "stock_ratio": 18.5}, {"rank": 13, "chisu": "143*150*20", "jaejil": "CN10", "freq": 17, "od": 143.0, "width": 150.0, "height": 20.0, "box_side": 150.0, "vol_per_piece_cm3": 450.0, "avg_qty": 40.8, "stock": 194, "total_qty": 694, "total_vol_cm3": 18360.0, "score": 57.5, "stock_ratio": 28.0}, {"rank": 14, "chisu": "95*100*15A", "jaejil": "CN10", "freq": 17, "od": 95.0, "width": 100.0, "height": 15.0, "box_side": 100.0, "vol_per_piece_cm3": 150.0, "avg_qty": 25.1, "stock": 215, "total_qty": 427, "total_vol_cm3": 3765.0, "score": 42.5, "stock_ratio": 50.4}, {"rank": 15, "chisu": "100*105*20", "jaejil": "CN10", "freq": 17, "od": 100.0, "width": 105.0, "height": 20.0, "box_side": 105.0, "vol_per_piece_cm3": 220.5, "avg_qty": 8.6, "stock": 129, "total_qty": 147, "total_vol_cm3": 1896.3, "score": 42.5, "stock_ratio": 87.8}, {"rank": 16, "chisu": "60*65*15", "jaejil": "CN10", "freq": 17, "od": 60.0, "width": 65.0, "height": 15.0, "box_side": 65.0, "vol_per_piece_cm3": 63.4, "avg_qty": 26.4, "stock": 320, "total_qty": 448, "total_vol_cm3": 1673.1, "score": 42.5, "stock_ratio": 71.4}, {"rank": 17, "chisu": "65*70*9.5A", "jaejil": "CN10", "freq": 17, "od": 65.0, "width": 70.0, "height": 9.5, "box_side": 70.0, "vol_per_piece_cm3": 46.5, "avg_qty": 27.0, "stock": 230, "total_qty": 459, "total_vol_cm3": 1256.8, "score": 42.5, "stock_ratio": 50.1}, {"rank": 18, "chisu": "104*110*25", "jaejil": "CM20", "freq": 16, "od": 104.0, "width": 110.0, "height": 25.0, "box_side": 110.0, "vol_per_piece_cm3": 302.5, "avg_qty": 59.1, "stock": 37, "total_qty": 945, "total_vol_cm3": 17877.8, "score": 90.0, "stock_ratio": 3.9}, {"rank": 19, "chisu": "70*75*14.8", "jaejil": "RS40", "freq": 16, "od": 70.0, "width": 75.0, "height": 14.8, "box_side": 75.0, "vol_per_piece_cm3": 83.2, "avg_qty": 59.4, "stock": 73, "total_qty": 951, "total_vol_cm3": 4945.1, "score": 80.0, "stock_ratio": 7.7}, {"rank": 20, "chisu": "114*120*30", "jaejil": "CN10", "freq": 16, "od": 114.0, "width": 120.0, "height": 30.0, "box_side": 120.0, "vol_per_piece_cm3": 432.0, "avg_qty": 13.0, "stock": 75, "total_qty": 208, "total_vol_cm3": 5616.0, "score": 55.0, "stock_ratio": 36.1}, {"rank": 21, "chisu": "130*145*16", "jaejil": "RS20", "freq": 16, "od": 130.0, "width": 145.0, "height": 16.0, "box_side": 145.0, "vol_per_piece_cm3": 336.4, "avg_qty": 6.9, "stock": -1, "total_qty": 110, "total_vol_cm3": 2321.2, "score": 55.0, "stock_ratio": 50.0}, {"rank": 22, "chisu": "200*220*20", "jaejil": "RS20", "freq": 16, "od": 200.0, "width": 220.0, "height": 20.0, "box_side": 220.0, "vol_per_piece_cm3": 968.0, "avg_qty": 23.2, "stock": -1, "total_qty": 372, "total_vol_cm3": 22457.6, "score": 55.0, "stock_ratio": 50.0}, {"rank": 23, "chisu": "80*85*15A", "jaejil": "CN10", "freq": 16, "od": 80.0, "width": 85.0, "height": 15.0, "box_side": 85.0, "vol_per_piece_cm3": 108.4, "avg_qty": 47.2, "stock": 554, "total_qty": 755, "total_vol_cm3": 5115.3, "score": 40.0, "stock_ratio": 73.4}, {"rank": 24, "chisu": "99*105*25", "jaejil": "CN10", "freq": 15, "od": 99.0, "width": 105.0, "height": 25.0, "box_side": 105.0, "vol_per_piece_cm3": 275.6, "avg_qty": 46.0, "stock": 84, "total_qty": 690, "total_vol_cm3": 12678.8, "score": 67.5, "stock_ratio": 12.2}, {"rank": 25, "chisu": "60*65*14.8", "jaejil": "RS40", "freq": 15, "od": 60.0, "width": 65.0, "height": 14.8, "box_side": 65.0, "vol_per_piece_cm3": 62.5, "avg_qty": 36.7, "stock": 68, "total_qty": 551, "total_vol_cm3": 2294.9, "score": 67.5, "stock_ratio": 12.3}, {"rank": 26, "chisu": "105*110*15A", "jaejil": "CN10", "freq": 15, "od": 105.0, "width": 110.0, "height": 15.0, "box_side": 110.0, "vol_per_piece_cm3": 181.5, "avg_qty": 7.5, "stock": 40, "total_qty": 113, "total_vol_cm3": 1361.2, "score": 52.5, "stock_ratio": 35.4}, {"rank": 27, "chisu": "155*160*15", "jaejil": "CM20", "freq": 14, "od": 155.0, "width": 160.0, "height": 15.0, "box_side": 160.0, "vol_per_piece_cm3": 384.0, "avg_qty": 17.2, "stock": 3, "total_qty": 241, "total_vol_cm3": 6604.8, "score": 85.0, "stock_ratio": 1.2}, {"rank": 28, "chisu": "85*90*20", "jaejil": "RS40", "freq": 14, "od": 85.0, "width": 90.0, "height": 20.0, "box_side": 90.0, "vol_per_piece_cm3": 162.0, "avg_qty": 23.6, "stock": 33, "total_qty": 330, "total_vol_cm3": 3823.2, "score": 75.0, "stock_ratio": 10.0}, {"rank": 29, "chisu": "130*135*15", "jaejil": "CN10", "freq": 14, "od": 130.0, "width": 135.0, "height": 15.0, "box_side": 135.0, "vol_per_piece_cm3": 273.4, "avg_qty": 28.4, "stock": 167, "total_qty": 397, "total_vol_cm3": 7763.8, "score": 50.0, "stock_ratio": 42.1}, {"rank": 30, "chisu": "75*80*15A", "jaejil": "CN10", "freq": 14, "od": 75.0, "width": 80.0, "height": 15.0, "box_side": 80.0, "vol_per_piece_cm3": 96.0, "avg_qty": 55.3, "stock": 316, "total_qty": 774, "total_vol_cm3": 5308.8, "score": 50.0, "stock_ratio": 40.8}, {"rank": 31, "chisu": "32*37*14.8", "jaejil": "RS40", "freq": 14, "od": 32.0, "width": 37.0, "height": 14.8, "box_side": 37.0, "vol_per_piece_cm3": 20.3, "avg_qty": 48.4, "stock": 176, "total_qty": 678, "total_vol_cm3": 980.6, "score": 50.0, "stock_ratio": 26.0}, {"rank": 32, "chisu": "63*68*14.8", "jaejil": "RS40", "freq": 14, "od": 63.0, "width": 68.0, "height": 14.8, "box_side": 68.0, "vol_per_piece_cm3": 68.4, "avg_qty": 24.6, "stock": 192, "total_qty": 345, "total_vol_cm3": 1683.5, "score": 35.0, "stock_ratio": 55.7}, {"rank": 33, "chisu": "105*110*9.5", "jaejil": "CN10", "freq": 14, "od": 105.0, "width": 110.0, "height": 9.5, "box_side": 110.0, "vol_per_piece_cm3": 115.0, "avg_qty": 12.9, "stock": 495, "total_qty": 180, "total_vol_cm3": 1482.9, "score": 35.0, "stock_ratio": 275.0}, {"rank": 34, "chisu": "40*45*14.8", "jaejil": "RS40", "freq": 14, "od": 40.0, "width": 45.0, "height": 14.8, "box_side": 45.0, "vol_per_piece_cm3": 30.0, "avg_qty": 36.6, "stock": 719, "total_qty": 512, "total_vol_cm3": 1096.9, "score": 35.0, "stock_ratio": 140.4}, {"rank": 35, "chisu": "60*65*19.8", "jaejil": "RS40", "freq": 13, "od": 60.0, "width": 65.0, "height": 19.8, "box_side": 65.0, "vol_per_piece_cm3": 83.7, "avg_qty": 32.7, "stock": 68, "total_qty": 425, "total_vol_cm3": 2735.5, "score": 62.5, "stock_ratio": 16.0}, {"rank": 36, "chisu": "182*190*20", "jaejil": "CN10", "freq": 13, "od": 182.0, "width": 190.0, "height": 20.0, "box_side": 190.0, "vol_per_piece_cm3": 722.0, "avg_qty": 61.7, "stock": 160, "total_qty": 802, "total_vol_cm3": 44547.4, "score": 62.5, "stock_ratio": 20.0}, {"rank": 37, "chisu": "75*80*19.5", "jaejil": "RS40", "freq": 13, "od": 75.0, "width": 80.0, "height": 19.5, "box_side": 80.0, "vol_per_piece_cm3": 124.8, "avg_qty": 25.7, "stock": 76, "total_qty": 334, "total_vol_cm3": 3207.4, "score": 47.5, "stock_ratio": 22.8}, {"rank": 38, "chisu": "270*290*45", "jaejil": "CG72", "freq": 13, "od": 270.0, "width": 290.0, "height": 45.0, "box_side": 290.0, "vol_per_piece_cm3": 3784.5, "avg_qty": 23.9, "stock": -1, "total_qty": 311, "total_vol_cm3": 90449.5, "score": 47.5, "stock_ratio": 50.0}, {"rank": 39, "chisu": "158*165*25", "jaejil": "CM20", "freq": 13, "od": 158.0, "width": 165.0, "height": 25.0, "box_side": 165.0, "vol_per_piece_cm3": 680.6, "avg_qty": 14.6, "stock": 77, "total_qty": 190, "total_vol_cm3": 9937.1, "score": 47.5, "stock_ratio": 40.5}, {"rank": 40, "chisu": "65*71*50", "jaejil": "M/NW", "freq": 12, "od": 65.0, "width": 71.0, "height": 50.0, "box_side": 71.0, "vol_per_piece_cm3": 252.1, "avg_qty": 27.0, "stock": 0, "total_qty": 324, "total_vol_cm3": 6805.4, "score": 80.0, "stock_ratio": 0.0}, {"rank": 41, "chisu": "70*75*19.5", "jaejil": "RS40", "freq": 12, "od": 70.0, "width": 75.0, "height": 19.5, "box_side": 75.0, "vol_per_piece_cm3": 109.7, "avg_qty": 32.2, "stock": 132, "total_qty": 387, "total_vol_cm3": 3531.9, "score": 45.0, "stock_ratio": 34.1}, {"rank": 42, "chisu": "192*200*22.5", "jaejil": "CM20", "freq": 12, "od": 192.0, "width": 200.0, "height": 22.5, "box_side": 200.0, "vol_per_piece_cm3": 900.0, "avg_qty": 11.9, "stock": 46, "total_qty": 143, "total_vol_cm3": 10710.0, "score": 45.0, "stock_ratio": 32.2}, {"rank": 43, "chisu": "90*110*122*140", "jaejil": "CM20", "freq": 12, "od": 90.0, "width": 110.0, "height": 122.0, "box_side": 110.0, "vol_per_piece_cm3": 1476.2, "avg_qty": 4.2, "stock": -1, "total_qty": 51, "total_vol_cm3": 6200.0, "score": 45.0, "stock_ratio": 50.0}, {"rank": 44, "chisu": "30*34*30", "jaejil": "M/NW", "freq": 12, "od": 30.0, "width": 34.0, "height": 30.0, "box_side": 34.0, "vol_per_piece_cm3": 34.7, "avg_qty": 22.5, "stock": 305, "total_qty": 270, "total_vol_cm3": 780.3, "score": 30.0, "stock_ratio": 113.0}, {"rank": 45, "chisu": "70*75*15", "jaejil": "CN10", "freq": 11, "od": 70.0, "width": 75.0, "height": 15.0, "box_side": 75.0, "vol_per_piece_cm3": 84.4, "avg_qty": 87.4, "stock": 82, "total_qty": 961, "total_vol_cm3": 7374.4, "score": 67.5, "stock_ratio": 8.5}, {"rank": 46, "chisu": "109*115*30", "jaejil": "CN10", "freq": 11, "od": 109.0, "width": 115.0, "height": 30.0, "box_side": 115.0, "vol_per_piece_cm3": 396.8, "avg_qty": 29.5, "stock": 21, "total_qty": 325, "total_vol_cm3": 11704.1, "score": 67.5, "stock_ratio": 6.5}, {"rank": 47, "chisu": "94*100*15", "jaejil": "CN10", "freq": 11, "od": 94.0, "width": 100.0, "height": 15.0, "box_side": 100.0, "vol_per_piece_cm3": 150.0, "avg_qty": 48.5, "stock": 106, "total_qty": 533, "total_vol_cm3": 7275.0, "score": 57.5, "stock_ratio": 19.9}, {"rank": 48, "chisu": "130*150*22", "jaejil": "RS20", "freq": 11, "od": 130.0, "width": 150.0, "height": 22.0, "box_side": 150.0, "vol_per_piece_cm3": 495.0, "avg_qty": 5.0, "stock": -1, "total_qty": 55, "total_vol_cm3": 2475.0, "score": 42.5, "stock_ratio": 50.0}, {"rank": 49, "chisu": "80*85*20", "jaejil": "RS40", "freq": 11, "od": 80.0, "width": 85.0, "height": 20.0, "box_side": 85.0, "vol_per_piece_cm3": 144.5, "avg_qty": 42.5, "stock": 187, "total_qty": 468, "total_vol_cm3": 6141.2, "score": 42.5, "stock_ratio": 40.0}, {"rank": 50, "chisu": "120*125*9.5", "jaejil": "CM20", "freq": 11, "od": 120.0, "width": 125.0, "height": 9.5, "box_side": 125.0, "vol_per_piece_cm3": 148.4, "avg_qty": 29.5, "stock": 130, "total_qty": 325, "total_vol_cm3": 4378.9, "score": 42.5, "stock_ratio": 40.0}, {"rank": 51, "chisu": "120*125*9.5", "jaejil": "CN10", "freq": 11, "od": 120.0, "width": 125.0, "height": 9.5, "box_side": 125.0, "vol_per_piece_cm3": 148.4, "avg_qty": 11.8, "stock": 98, "total_qty": 130, "total_vol_cm3": 1751.6, "score": 27.5, "stock_ratio": 75.4}, {"rank": 52, "chisu": "90*95*9.5A", "jaejil": "CM20", "freq": 11, "od": 90.0, "width": 95.0, "height": 9.5, "box_side": 95.0, "vol_per_piece_cm3": 85.7, "avg_qty": 71.8, "stock": 456, "total_qty": 790, "total_vol_cm3": 6156.0, "score": 27.5, "stock_ratio": 57.7}, {"rank": 53, "chisu": "55*60*20", "jaejil": "CN10", "freq": 11, "od": 55.0, "width": 60.0, "height": 20.0, "box_side": 60.0, "vol_per_piece_cm3": 72.0, "avg_qty": 34.0, "stock": 219, "total_qty": 374, "total_vol_cm3": 2448.0, "score": 27.5, "stock_ratio": 58.6}, {"rank": 54, "chisu": "22*25*20", "jaejil": "M/P", "freq": 11, "od": 22.0, "width": 25.0, "height": 20.0, "box_side": 25.0, "vol_per_piece_cm3": 12.5, "avg_qty": 9.2, "stock": 198, "total_qty": 101, "total_vol_cm3": 115.0, "score": 27.5, "stock_ratio": 196.0}, {"rank": 55, "chisu": "58*63*20", "jaejil": "CN10", "freq": 10, "od": 58.0, "width": 63.0, "height": 20.0, "box_side": 63.0, "vol_per_piece_cm3": 79.4, "avg_qty": 26.0, "stock": 9, "total_qty": 260, "total_vol_cm3": 2063.9, "score": 75.0, "stock_ratio": 3.5}, {"rank": 56, "chisu": "143*150*25", "jaejil": "CM20", "freq": 10, "od": 143.0, "width": 150.0, "height": 25.0, "box_side": 150.0, "vol_per_piece_cm3": 562.5, "avg_qty": 16.6, "stock": 3, "total_qty": 166, "total_vol_cm3": 9337.5, "score": 75.0, "stock_ratio": 1.8}, {"rank": 57, "chisu": "232*240*25", "jaejil": "CM20", "freq": 10, "od": 232.0, "width": 240.0, "height": 25.0, "box_side": 240.0, "vol_per_piece_cm3": 1440.0, "avg_qty": 3.9, "stock": 0, "total_qty": 39, "total_vol_cm3": 5616.0, "score": 75.0, "stock_ratio": 0.0}, {"rank": 58, "chisu": "109*115*15", "jaejil": "CM20", "freq": 10, "od": 109.0, "width": 115.0, "height": 15.0, "box_side": 115.0, "vol_per_piece_cm3": 198.4, "avg_qty": 57.2, "stock": 47, "total_qty": 572, "total_vol_cm3": 11347.1, "score": 65.0, "stock_ratio": 8.2}, {"rank": 59, "chisu": "125*130*15", "jaejil": "CM20", "freq": 10, "od": 125.0, "width": 130.0, "height": 15.0, "box_side": 130.0, "vol_per_piece_cm3": 253.5, "avg_qty": 31.2, "stock": 126, "total_qty": 312, "total_vol_cm3": 7909.2, "score": 40.0, "stock_ratio": 40.4}, {"rank": 60, "chisu": "95*100*9.5", "jaejil": "CM20", "freq": 10, "od": 95.0, "width": 100.0, "height": 9.5, "box_side": 100.0, "vol_per_piece_cm3": 95.0, "avg_qty": 86.4, "stock": 243, "total_qty": 864, "total_vol_cm3": 8208.0, "score": 40.0, "stock_ratio": 28.1}, {"rank": 61, "chisu": "120*125*9.5", "jaejil": "RS40", "freq": 10, "od": 120.0, "width": 125.0, "height": 9.5, "box_side": 125.0, "vol_per_piece_cm3": 148.4, "avg_qty": 65.5, "stock": 283, "total_qty": 655, "total_vol_cm3": 9722.7, "score": 40.0, "stock_ratio": 43.2}, {"rank": 62, "chisu": "157*165*15", "jaejil": "RS40", "freq": 10, "od": 157.0, "width": 165.0, "height": 15.0, "box_side": 165.0, "vol_per_piece_cm3": 408.4, "avg_qty": 24.9, "stock": 112, "total_qty": 249, "total_vol_cm3": 10168.5, "score": 40.0, "stock_ratio": 45.0}, {"rank": 63, "chisu": "160*165*15", "jaejil": "CM20", "freq": 10, "od": 160.0, "width": 165.0, "height": 15.0, "box_side": 165.0, "vol_per_piece_cm3": 408.4, "avg_qty": 5.6, "stock": 35, "total_qty": 56, "total_vol_cm3": 2286.9, "score": 25.0, "stock_ratio": 62.5}, {"rank": 64, "chisu": "153*160*30", "jaejil": "CM20", "freq": 10, "od": 153.0, "width": 160.0, "height": 30.0, "box_side": 160.0, "vol_per_piece_cm3": 768.0, "avg_qty": 8.0, "stock": 57, "total_qty": 80, "total_vol_cm3": 6144.0, "score": 25.0, "stock_ratio": 71.2}, {"rank": 65, "chisu": "100*105*15", "jaejil": "CM20", "freq": 10, "od": 100.0, "width": 105.0, "height": 15.0, "box_side": 105.0, "vol_per_piece_cm3": 165.4, "avg_qty": 8.0, "stock": 129, "total_qty": 80, "total_vol_cm3": 1323.0, "score": 25.0, "stock_ratio": 161.2}, {"rank": 66, "chisu": "60*65*40", "jaejil": "M/NW", "freq": 10, "od": 60.0, "width": 65.0, "height": 40.0, "box_side": 65.0, "vol_per_piece_cm3": 169.0, "avg_qty": 37.2, "stock": 291, "total_qty": 372, "total_vol_cm3": 6286.8, "score": 25.0, "stock_ratio": 78.2}, {"rank": 67, "chisu": "18*21*20", "jaejil": "M/P", "freq": 9, "od": 18.0, "width": 21.0, "height": 20.0, "box_side": 21.0, "vol_per_piece_cm3": 8.8, "avg_qty": 18.9, "stock": 0, "total_qty": 170, "total_vol_cm3": 166.7, "score": 72.5, "stock_ratio": 0.0}, {"rank": 68, "chisu": "172*180*22.5", "jaejil": "CM20", "freq": 9, "od": 172.0, "width": 180.0, "height": 22.5, "box_side": 180.0, "vol_per_piece_cm3": 729.0, "avg_qty": 12.4, "stock": 8, "total_qty": 112, "total_vol_cm3": 9039.6, "score": 62.5, "stock_ratio": 7.1}, {"rank": 69, "chisu": "162*170*25", "jaejil": "CM20", "freq": 9, "od": 162.0, "width": 170.0, "height": 25.0, "box_side": 170.0, "vol_per_piece_cm3": 722.5, "avg_qty": 91.4, "stock": 85, "total_qty": 823, "total_vol_cm3": 66036.5, "score": 52.5, "stock_ratio": 10.3}, {"rank": 70, "chisu": "217*225*25", "jaejil": "CM20", "freq": 9, "od": 217.0, "width": 225.0, "height": 25.0, "box_side": 225.0, "vol_per_piece_cm3": 1265.6, "avg_qty": 3.6, "stock": 4, "total_qty": 32, "total_vol_cm3": 4556.2, "score": 52.5, "stock_ratio": 12.5}, {"rank": 71, "chisu": "217*225*22.5", "jaejil": "CM20", "freq": 9, "od": 217.0, "width": 225.0, "height": 22.5, "box_side": 225.0, "vol_per_piece_cm3": 1139.1, "avg_qty": 20.0, "stock": 29, "total_qty": 180, "total_vol_cm3": 22781.2, "score": 52.5, "stock_ratio": 16.1}, {"rank": 72, "chisu": "55*60*40", "jaejil": "M/NW", "freq": 9, "od": 55.0, "width": 60.0, "height": 40.0, "box_side": 60.0, "vol_per_piece_cm3": 144.0, "avg_qty": 47.1, "stock": 74, "total_qty": 424, "total_vol_cm3": 6782.4, "score": 52.5, "stock_ratio": 17.5}, {"rank": 73, "chisu": "175*195*20", "jaejil": "RS20", "freq": 9, "od": 175.0, "width": 195.0, "height": 20.0, "box_side": 195.0, "vol_per_piece_cm3": 760.5, "avg_qty": 3.8, "stock": -1, "total_qty": 34, "total_vol_cm3": 2889.9, "score": 37.5, "stock_ratio": 50.0}, {"rank": 74, "chisu": "110*125*16", "jaejil": "RS20", "freq": 9, "od": 110.0, "width": 125.0, "height": 16.0, "box_side": 125.0, "vol_per_piece_cm3": 250.0, "avg_qty": 5.1, "stock": -1, "total_qty": 46, "total_vol_cm3": 1275.0, "score": 37.5, "stock_ratio": 50.0}, {"rank": 75, "chisu": "150*165*16", "jaejil": "RS20", "freq": 9, "od": 150.0, "width": 165.0, "height": 16.0, "box_side": 165.0, "vol_per_piece_cm3": 435.6, "avg_qty": 11.9, "stock": -1, "total_qty": 107, "total_vol_cm3": 5183.6, "score": 37.5, "stock_ratio": 50.0}, {"rank": 76, "chisu": "115*120*9.5", "jaejil": "CM20", "freq": 9, "od": 115.0, "width": 120.0, "height": 9.5, "box_side": 120.0, "vol_per_piece_cm3": 136.8, "avg_qty": 90.7, "stock": 181, "total_qty": 816, "total_vol_cm3": 12407.8, "score": 37.5, "stock_ratio": 22.2}, {"rank": 77, "chisu": "152*160*9.5", "jaejil": "RS40", "freq": 9, "od": 152.0, "width": 160.0, "height": 9.5, "box_side": 160.0, "vol_per_piece_cm3": 243.2, "avg_qty": 3.6, "stock": 10, "total_qty": 32, "total_vol_cm3": 875.5, "score": 37.5, "stock_ratio": 31.2}, {"rank": 78, "chisu": "130*135*19.8", "jaejil": "RS40", "freq": 9, "od": 130.0, "width": 135.0, "height": 19.8, "box_side": 135.0, "vol_per_piece_cm3": 360.9, "avg_qty": 10.7, "stock": 21, "total_qty": 96, "total_vol_cm3": 3861.1, "score": 37.5, "stock_ratio": 21.9}, {"rank": 79, "chisu": "130*135*9.5", "jaejil": "RS40", "freq": 9, "od": 130.0, "width": 135.0, "height": 9.5, "box_side": 135.0, "vol_per_piece_cm3": 173.1, "avg_qty": 3.6, "stock": 87, "total_qty": 32, "total_vol_cm3": 623.3, "score": 22.5, "stock_ratio": 271.9}, {"rank": 80, "chisu": "85*95*60", "jaejil": "M/P", "freq": 9, "od": 85.0, "width": 95.0, "height": 60.0, "box_side": 95.0, "vol_per_piece_cm3": 541.5, "avg_qty": 11.2, "stock": 121, "total_qty": 101, "total_vol_cm3": 6064.8, "score": 22.5, "stock_ratio": 119.8}, {"rank": 81, "chisu": "152*160*19.8", "jaejil": "RS40", "freq": 9, "od": 152.0, "width": 160.0, "height": 19.8, "box_side": 160.0, "vol_per_piece_cm3": 506.9, "avg_qty": 7.1, "stock": 46, "total_qty": 64, "total_vol_cm3": 3598.8, "score": 22.5, "stock_ratio": 71.9}, {"rank": 82, "chisu": "100*110*80", "jaejil": "M/P", "freq": 9, "od": 100.0, "width": 110.0, "height": 80.0, "box_side": 110.0, "vol_per_piece_cm3": 968.0, "avg_qty": 12.0, "stock": 90, "total_qty": 108, "total_vol_cm3": 11616.0, "score": 22.5, "stock_ratio": 83.3}, {"rank": 83, "chisu": "100*105*55", "jaejil": "M/P", "freq": 9, "od": 100.0, "width": 105.0, "height": 55.0, "box_side": 105.0, "vol_per_piece_cm3": 606.4, "avg_qty": 23.1, "stock": 176, "total_qty": 208, "total_vol_cm3": 14007.3, "score": 22.5, "stock_ratio": 84.6}, {"rank": 84, "chisu": "123*130*20", "jaejil": "CN10", "freq": 9, "od": 123.0, "width": 130.0, "height": 20.0, "box_side": 130.0, "vol_per_piece_cm3": 338.0, "avg_qty": 3.0, "stock": 33, "total_qty": 27, "total_vol_cm3": 1014.0, "score": 22.5, "stock_ratio": 122.2}, {"rank": 85, "chisu": "28*33*15", "jaejil": "RS40", "freq": 9, "od": 28.0, "width": 33.0, "height": 15.0, "box_side": 33.0, "vol_per_piece_cm3": 16.3, "avg_qty": 39.8, "stock": 192, "total_qty": 358, "total_vol_cm3": 650.1, "score": 22.5, "stock_ratio": 53.6}, {"rank": 86, "chisu": "19.05*22.23*20", "jaejil": "M/NW", "freq": 8, "od": 19.05, "width": 22.23, "height": 20.0, "box_side": 22.23, "vol_per_piece_cm3": 9.9, "avg_qty": 62.5, "stock": 0, "total_qty": 500, "total_vol_cm3": 617.7, "score": 70.0, "stock_ratio": 0.0}, {"rank": 87, "chisu": "75*80*20", "jaejil": "RS40", "freq": 8, "od": 75.0, "width": 80.0, "height": 20.0, "box_side": 80.0, "vol_per_piece_cm3": 128.0, "avg_qty": 71.8, "stock": 100, "total_qty": 574, "total_vol_cm3": 9190.4, "score": 50.0, "stock_ratio": 17.4}, {"rank": 88, "chisu": "99*105*15", "jaejil": "CM20", "freq": 8, "od": 99.0, "width": 105.0, "height": 15.0, "box_side": 105.0, "vol_per_piece_cm3": 165.4, "avg_qty": 120.8, "stock": 132, "total_qty": 966, "total_vol_cm3": 19977.3, "score": 50.0, "stock_ratio": 13.7}, {"rank": 89, "chisu": "105*110*9.5", "jaejil": "CM20", "freq": 8, "od": 105.0, "width": 110.0, "height": 9.5, "box_side": 110.0, "vol_per_piece_cm3": 115.0, "avg_qty": 108.8, "stock": 88, "total_qty": 870, "total_vol_cm3": 12506.6, "score": 50.0, "stock_ratio": 10.1}, {"rank": 90, "chisu": "104*110*12.5", "jaejil": "CN10", "freq": 8, "od": 104.0, "width": 110.0, "height": 12.5, "box_side": 110.0, "vol_per_piece_cm3": 151.2, "avg_qty": 18.5, "stock": 23, "total_qty": 148, "total_vol_cm3": 2798.1, "score": 50.0, "stock_ratio": 15.5}, {"rank": 91, "chisu": "135*140*19.8", "jaejil": "RS40", "freq": 8, "od": 135.0, "width": 140.0, "height": 19.8, "box_side": 140.0, "vol_per_piece_cm3": 388.1, "avg_qty": 78.0, "stock": 131, "total_qty": 624, "total_vol_cm3": 30270.2, "score": 35.0, "stock_ratio": 21.0}, {"rank": 92, "chisu": "65*82.5*90*95", "jaejil": "CM20", "freq": 8, "od": 65.0, "width": 82.5, "height": 90.0, "box_side": 82.5, "vol_per_piece_cm3": 612.6, "avg_qty": 11.1, "stock": -1, "total_qty": 89, "total_vol_cm3": 6799.4, "score": 35.0, "stock_ratio": 50.0}, {"rank": 93, "chisu": "90*110*122*148", "jaejil": "CM20", "freq": 8, "od": 90.0, "width": 110.0, "height": 122.0, "box_side": 110.0, "vol_per_piece_cm3": 1476.2, "avg_qty": 3.5, "stock": -1, "total_qty": 28, "total_vol_cm3": 5166.7, "score": 35.0, "stock_ratio": 50.0}, {"rank": 94, "chisu": "45*60*70*65", "jaejil": "CM20", "freq": 8, "od": 45.0, "width": 60.0, "height": 70.0, "box_side": 60.0, "vol_per_piece_cm3": 252.0, "avg_qty": 8.2, "stock": -1, "total_qty": 66, "total_vol_cm3": 2066.4, "score": 35.0, "stock_ratio": 50.0}, {"rank": 95, "chisu": "65*82*90*100", "jaejil": "CM20", "freq": 8, "od": 65.0, "width": 82.0, "height": 90.0, "box_side": 82.0, "vol_per_piece_cm3": 605.2, "avg_qty": 12.9, "stock": -1, "total_qty": 103, "total_vol_cm3": 7806.6, "score": 35.0, "stock_ratio": 50.0}, {"rank": 96, "chisu": "99*105*25", "jaejil": "CM20", "freq": 8, "od": 99.0, "width": 105.0, "height": 25.0, "box_side": 105.0, "vol_per_piece_cm3": 275.6, "avg_qty": 15.6, "stock": 49, "total_qty": 125, "total_vol_cm3": 4299.8, "score": 35.0, "stock_ratio": 39.2}, {"rank": 97, "chisu": "207*215*25", "jaejil": "CM20", "freq": 8, "od": 207.0, "width": 215.0, "height": 25.0, "box_side": 215.0, "vol_per_piece_cm3": 1155.6, "avg_qty": 37.0, "stock": 74, "total_qty": 296, "total_vol_cm3": 42758.1, "score": 35.0, "stock_ratio": 25.0}, {"rank": 98, "chisu": "70*86*95*160", "jaejil": "CM20", "freq": 8, "od": 70.0, "width": 86.0, "height": 95.0, "box_side": 86.0, "vol_per_piece_cm3": 702.6, "avg_qty": 4.8, "stock": -1, "total_qty": 38, "total_vol_cm3": 3372.6, "score": 35.0, "stock_ratio": 50.0}, {"rank": 99, "chisu": "50*65*70*60", "jaejil": "CM20", "freq": 8, "od": 50.0, "width": 65.0, "height": 70.0, "box_side": 65.0, "vol_per_piece_cm3": 295.8, "avg_qty": 2.5, "stock": -1, "total_qty": 20, "total_vol_cm3": 739.4, "score": 35.0, "stock_ratio": 50.0}, {"rank": 100, "chisu": "105*110*15", "jaejil": "CM20", "freq": 8, "od": 105.0, "width": 110.0, "height": 15.0, "box_side": 110.0, "vol_per_piece_cm3": 181.5, "avg_qty": 7.5, "stock": 162, "total_qty": 60, "total_vol_cm3": 1361.2, "score": 20.0, "stock_ratio": 270.0}];
+const SUMMARY = {"total_items": 100, "total_volume_cm3": 835761.0, "total_volume_L": 835.8, "small_count": 11, "medium_count": 54, "large_count": 35, "small_vol_L": 17.2, "medium_vol_L": 302.6, "large_vol_L": 516.0};
+
+const JAEJIL_COLORS = {
+  'CN10': '#3b82f6', 'CN20': '#60a5fa', 'CM20': '#f59e0b', 'RS40': '#ef4444',
+  'RS20': '#f97316', 'CG72': '#8b5cf6', 'M/NW': '#06b6d4', 'M/P': '#14b8a6',
+  'M/T': '#84cc16', 'M/N': '#a3e635'
+};
+
+function getColor(jaejil) { return JAEJIL_COLORS[jaejil] || '#64748b'; }
+
+function fmt(n) { return n.toLocaleString('ko-KR'); }
+function fmtVol(cm3) {
+  if (cm3 >= 1000) return (cm3/1000).toFixed(1) + 'L';
+  return cm3.toFixed(0) + 'cm³';
+}
+
+// Box categories
+function categorizeForBox(item) {
+  const s = item.box_side;
+  if (s <= 60) return 'small';
+  if (s <= 120) return 'medium';
+  if (s <= 180) return 'large';
+  return 'xlarge';
+}
+
+const categories = {
+  small:  { name: '소형 박스', dims: '30×30×30cm', vol: 27, color: '#22c55e', items: [] },
+  medium: { name: '중형 박스', dims: '40×40×30cm', vol: 48, color: '#f59e0b', items: [] },
+  large:  { name: '대형 박스', dims: '50×50×40cm', vol: 100, color: '#ef4444', items: [] },
+  xlarge: { name: '특대 박스', dims: '60×60×50cm', vol: 180, color: '#8b5cf6', items: [] }
+};
+
+DATA.forEach(item => {
+  const cat = categorizeForBox(item);
+  categories[cat].items.push(item);
+});
+
+// Calculate how many pieces fit in each box
+function pcsPerBox(item, boxVolL) {
+  const boxVolCm3 = boxVolL * 1000;
+  const packing = 0.65; // packing efficiency for ring shapes
+  return Math.floor((boxVolCm3 * packing) / item.vol_per_piece_cm3);
+}
+
+function render() {
+  const app = document.getElementById('app');
+
+  // === Summary Cards ===
+  const totalVol = DATA.reduce((s,i) => s + i.total_vol_cm3, 0);
+  const avgFreq = (DATA.reduce((s,i) => s + i.freq, 0) / DATA.length).toFixed(1);
+  const jaejilSet = new Set(DATA.map(i => i.jaejil));
+
+  let html = `
+  <div class="summary-row">
+    <div class="card highlight">
+      <div class="card-label">분석 제품</div>
+      <div class="card-value">${DATA.length}개</div>
+      <div class="card-sub">빈도 ${DATA[DATA.length-1].freq}~${DATA[0].freq}회/3개월</div>
+    </div>
+    <div class="card">
+      <div class="card-label">총 부피 (1회 평균주문)</div>
+      <div class="card-value">${(totalVol/1000).toFixed(0)}L</div>
+      <div class="card-sub">${(totalVol/1000000).toFixed(2)}m³</div>
+    </div>
+    <div class="card">
+      <div class="card-label">평균 주문빈도</div>
+      <div class="card-value">${avgFreq}회</div>
+      <div class="card-sub">3개월 기준</div>
+    </div>
+    <div class="card">
+      <div class="card-label">재질 종류</div>
+      <div class="card-value">${jaejilSet.size}종</div>
+      <div class="card-sub">${[...jaejilSet].join(', ')}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">소형 (≤60mm)</div>
+      <div class="card-value">${categories.small.items.length}개</div>
+      <div class="card-sub">${(categories.small.items.reduce((s,i)=>s+i.total_vol_cm3,0)/1000).toFixed(1)}L</div>
+    </div>
+    <div class="card">
+      <div class="card-label">중형 (61~120mm)</div>
+      <div class="card-value">${categories.medium.items.length}개</div>
+      <div class="card-sub">${(categories.medium.items.reduce((s,i)=>s+i.total_vol_cm3,0)/1000).toFixed(1)}L</div>
+    </div>
+  </div>`;
+
+  // === Tabs ===
+  html += `
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('boxes')">박스 적재 분석</div>
+    <div class="tab" onclick="switchTab('treemap')">부피 트리맵</div>
+    <div class="tab" onclick="switchTab('chart')">빈도 × 부피 차트</div>
+    <div class="tab" onclick="switchTab('table')">전체 데이터</div>
+  </div>`;
+
+  // === Tab: Boxes ===
+  html += `<div class="tab-content active" id="tab-boxes">`;
+  html += `<div class="section"><div class="section-title">박스 사이즈별 적재 시뮬레이션 <span class="badge">제품 외경 기준 분류</span></div>`;
+  html += `<div class="box-grid">`;
+
+  for (const [key, cat] of Object.entries(categories)) {
+    const itemVol = cat.items.reduce((s,i) => s + i.total_vol_cm3, 0);
+    const avgQtyVol = itemVol / 1000; // in liters
+    const boxCount = Math.ceil(avgQtyVol / cat.vol);
+    const fillPct = cat.items.length > 0 ? Math.min(100, ((avgQtyVol / (cat.vol * boxCount)) * 100)) : 0;
+
+    html += `
+    <div class="box-card ${key}">
+      <div class="box-info">
+        <div class="name">${cat.name}</div>
+        <div class="dims">${cat.dims} = ${cat.vol}L</div>
+      </div>
+      <div class="box-3d">
+        <div class="face front">${cat.dims.split('×')[0]}</div>
+        <div class="face side">${cat.dims.split('×')[2]}</div>
+        <div class="face top"></div>
+      </div>
+      <div class="box-stats">
+        <div class="box-stat">
+          <div class="val">${cat.items.length}</div>
+          <div class="lbl">제품 종류</div>
+        </div>
+        <div class="box-stat">
+          <div class="val">${avgQtyVol.toFixed(1)}L</div>
+          <div class="lbl">총 부피(평균1회)</div>
+        </div>
+        <div class="box-stat">
+          <div class="val">${boxCount || 0}</div>
+          <div class="lbl">필요 박스 수</div>
+        </div>
+        <div class="box-stat">
+          <div class="val">${cat.items.length > 0 ? (itemVol / cat.items.length / 1000).toFixed(1) : 0}L</div>
+          <div class="lbl">제품당 평균</div>
+        </div>
+      </div>
+      <div class="fill-bar"><div class="fill" style="width:${fillPct}%;background:${cat.color}"></div></div>
+      <div class="fill-pct">적재율 ${fillPct.toFixed(0)}% (${boxCount}박스 기준)</div>
+      ${cat.items.length > 0 ? `<div style="margin-top:12px;font-size:11px;color:#64748b;">
+        대표 제품: ${cat.items.slice(0,5).map(i => i.chisu).join(', ')}${cat.items.length > 5 ? '...' : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
+  html += `</div></div>`;
+
+  // Box summary
+  const totalBoxes = Object.values(categories).reduce((s, cat) => {
+    const vol = cat.items.reduce((s2,i) => s2 + i.total_vol_cm3, 0) / 1000;
+    return s + Math.ceil(vol / cat.vol);
+  }, 0);
+
+  html += `
+  <div class="card highlight" style="margin-top:20px;text-align:center;">
+    <div class="card-label">전체 요약</div>
+    <div class="card-value">총 ${totalBoxes}박스 필요</div>
+    <div class="card-sub">Top100 제품 각 1회 평균주문 수량 기준 (패킹효율 65% 적용 전)</div>
+  </div>`;
+  html += `</div>`;
+
+  // === Tab: Treemap ===
+  html += `<div class="tab-content" id="tab-treemap">`;
+  html += `<div class="section"><div class="section-title">제품별 부피 트리맵 <span class="badge">크기 = 총 부피</span></div>`;
+  html += `<div class="legend">`;
+  for (const [j, c] of Object.entries(JAEJIL_COLORS)) {
+    if (DATA.some(d => d.jaejil === j)) {
+      html += `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div>${j}</div>`;
+    }
+  }
+  html += `</div>`;
+
+  // Treemap - simple proportional layout
+  const maxVol = Math.max(...DATA.map(d => d.total_vol_cm3));
+  const sorted = [...DATA].sort((a,b) => b.total_vol_cm3 - a.total_vol_cm3);
+
+  html += `<div class="treemap" style="min-height:400px;">`;
+  sorted.forEach(item => {
+    const pct = Math.max(0.8, (item.total_vol_cm3 / maxVol) * 100);
+    const area = Math.max(50, Math.sqrt(pct) * 30);
+    const color = getColor(item.jaejil);
+    html += `
+    <div class="treemap-item" style="width:${area}px;height:${area}px;background:${color}22;border:1px solid ${color}66;color:${color};">
+      <div>
+        <div style="font-size:${Math.max(8, Math.min(13, area/8))}px">${item.chisu}</div>
+        <div style="font-size:9px;opacity:0.7">${fmtVol(item.total_vol_cm3)}</div>
+      </div>
+      <div class="tm-tooltip">
+        <div><strong>${item.chisu}</strong> (${item.jaejil})</div>
+        <div>빈도: ${item.freq}회 | 평균수량: ${item.avg_qty}개</div>
+        <div>개당: ${item.vol_per_piece_cm3}cm³ | 총: ${fmtVol(item.total_vol_cm3)}</div>
+        <div>재고: ${item.stock}개 | 재고율: ${item.stock_ratio}%</div>
+      </div>
+    </div>`;
+  });
+  html += `</div></div></div>`;
+
+  // === Tab: Chart ===
+  html += `<div class="tab-content" id="tab-chart">`;
+  html += `<div class="section"><div class="section-title">빈도순 부피 차트 <span class="badge">막대 = 총부피, 색상 = 재질</span></div>`;
+  html += `<div class="legend">`;
+  for (const [j, c] of Object.entries(JAEJIL_COLORS)) {
+    if (DATA.some(d => d.jaejil === j)) {
+      html += `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div>${j}</div>`;
+    }
+  }
+  html += `</div>`;
+
+  html += `<div class="chart-container"><div class="bar-chart">`;
+  const maxBarVol = Math.max(...DATA.map(d => d.total_vol_cm3));
+  DATA.forEach(item => {
+    const h = Math.max(4, (item.total_vol_cm3 / maxBarVol) * 180);
+    const color = getColor(item.jaejil);
+    html += `
+    <div class="bar-wrapper">
+      <div class="bar" style="height:${h}px;background:${color};">
+        <div class="tooltip">
+          <div><strong>${item.chisu}</strong> (${item.jaejil})</div>
+          <div>빈도: ${item.freq}회</div>
+          <div>평균수량: ${item.avg_qty}개</div>
+          <div>개당: ${item.vol_per_piece_cm3}cm³</div>
+          <div>총부피: ${fmtVol(item.total_vol_cm3)}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#64748b;">
+    <span>← 고빈도 (${DATA[0].freq}회)</span><span>저빈도 (${DATA[DATA.length-1].freq}회) →</span>
+  </div>`;
+  html += `</div></div></div>`;
+
+  // === Tab: Table ===
+  html += `<div class="tab-content" id="tab-table">`;
+  html += `<div class="section"><div class="section-title">전체 데이터 테이블 <span class="badge">클릭하여 정렬</span></div>`;
+  html += `<div class="table-wrap"><table id="dataTable">
+    <thead><tr>
+      <th onclick="sortTable(0)">순위</th>
+      <th onclick="sortTable(1)">치수(외경×폭×높이)</th>
+      <th onclick="sortTable(2)">재질</th>
+      <th onclick="sortTable(3)">빈도</th>
+      <th onclick="sortTable(4)">평균수량</th>
+      <th onclick="sortTable(5)">개당부피</th>
+      <th onclick="sortTable(6)">총부피(1회)</th>
+      <th onclick="sortTable(7)">사이즈</th>
+      <th onclick="sortTable(8)">재고</th>
+      <th onclick="sortTable(9)">추천박스</th>
+    </tr></thead><tbody>`;
+
+  DATA.forEach((item, idx) => {
+    const cat = categorizeForBox(item);
+    const sizeLabel = {small:'소형', medium:'중형', large:'대형', xlarge:'특대'}[cat];
+    const sizeClass = {small:'size-s', medium:'size-m', large:'size-l', xlarge:'size-l'}[cat];
+    const boxInfo = categories[cat];
+    const pcs = pcsPerBox(item, boxInfo.vol);
+    const color = getColor(item.jaejil);
+
+    html += `<tr>
+      <td>${item.rank}</td>
+      <td><strong>${item.chisu}</strong></td>
+      <td><span class="jaejil-badge" style="background:${color}22;color:${color}">${item.jaejil}</span></td>
+      <td>${item.freq}회</td>
+      <td>${item.avg_qty}개</td>
+      <td>${item.vol_per_piece_cm3}cm³</td>
+      <td><strong>${fmtVol(item.total_vol_cm3)}</strong></td>
+      <td><span class="size-badge ${sizeClass}">${sizeLabel}</span></td>
+      <td>${item.stock}개</td>
+      <td>${boxInfo.name} (${pcs}개/박스)</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div></div></div>`;
+
+  app.innerHTML = html;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+let sortCol = -1, sortAsc = true;
+function sortTable(col) {
+  const table = document.getElementById('dataTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+
+  rows.sort((a, b) => {
+    let av = a.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+    let bv = b.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+    if (col === 1 || col === 2) { av = a.cells[col].textContent; bv = b.cells[col].textContent; return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av); }
+    return sortAsc ? parseFloat(av) - parseFloat(bv) : parseFloat(bv) - parseFloat(av);
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+render();
+</script>
+
+</body>
+</html>
