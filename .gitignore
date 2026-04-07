@@ -1,29 +1,7 @@
-.env
-credentials.json
-token.json
-.tmp/
-__pycache__/
-*.pyc
-desktop.ini
-sync_to_gdrive.bat
-sync_to_gdrive.log
+# frequency, .gitignore만 GitHub에 유지
+# 나머지 전부 제외
 
-# 보안 파일
-keys/
-CNC_ANAL/soltri_config.json
-자동화/배출/config.json
-자동화/배출/폐수배출시설/water_config.json
-
-# Obsidian
-.obsidian/
-.attachments/
-
-# 개별 repo로 관리
-warehouse/
-clothing/
-kit60g-calc/
-BUY/
-frequency/*
-!frequency/안전재고발주.html
-!frequency/라벨이력조회.html
-!frequency/refresh.py
+*
+!.gitignore
+!frequency/
+!frequency/**
