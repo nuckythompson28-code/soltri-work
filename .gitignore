@@ -22,6 +22,7 @@ CNC_ANAL/soltri_config.json
 warehouse/
 clothing/
 kit60g-calc/
+BUY/
 frequency/*
 !frequency/안전재고발주.html
 !frequency/라벨이력조회.html
