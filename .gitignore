@@ -3,6 +3,8 @@
 
 *
 !.gitignore
+!.github/
+!.github/**
 !frequency/
 !frequency/**
 
