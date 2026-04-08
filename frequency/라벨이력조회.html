@@ -94,8 +94,6 @@ body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#f0f2f5;color:
 </style>
 </head>
 <body>
-<script src="label_data.js" onerror="console.log('label_data.js 없음')"></script>
-<script src="blocklist.js" onerror="console.log('blocklist.js 없음')"></script>
 
 <!-- 상단 입력 -->
 <div class="top">
@@ -318,8 +316,8 @@ function renderResults(results, chisu, mat) {
   const latestDate = results[0] ? results[0].ship_date : '-';
   const oldestDate = results[results.length - 1] ? results[results.length - 1].ship_date : '-';
 
-  // 재고 조회 (로컬 STOCK_LOOKUP 또는 Google Sheets STOCK)
-  const stockLookup = (typeof STOCK_LOOKUP !== 'undefined') ? STOCK_LOOKUP : STOCK;
+  // 재고 조회 (Google Sheets STOCK)
+  const stockLookup = STOCK;
   const jaejilKeys = Object.keys(jaejilMap);
   let stockInfo = [];
   jaejilKeys.forEach(j => {
@@ -506,16 +504,8 @@ function renderBlocklist() {
 
 // 페이지 로드
 window.onload = function() {
-  if (typeof DATA_LABEL !== 'undefined' && DATA_LABEL.length > 0) {
-    ALL_DATA = DATA_LABEL;
-    if (typeof STOCK_LOOKUP !== 'undefined') STOCK = STOCK_LOOKUP;
-    console.log('로컬 로드:', ALL_DATA.length + '건');
-    renderFreqCards();
-  } else {
-    loadData();
-    // Google Sheets 로드 후 카드 렌더링 (약간 딜레이)
-    setTimeout(renderFreqCards, 2000);
-  }
+  loadData();
+  setTimeout(renderFreqCards, 2000);
   document.getElementById('inD1').focus();
   renderBlocklist();
 };

@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Soltri 선생산 관리</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="data_wr.js" onerror="console.log('data_wr.js 없음 - Google Sheets에서 로드')"></script>
-<script src="blocklist.js" onerror="console.log('blocklist.js 없음')"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
@@ -1842,11 +1840,6 @@ loadGraveyardFromSheet(function() {
     if (items) {
       ITEMS_ALL = items;
       ITEMS = [...ITEMS_ALL];
-    } else if (typeof DATA_WR !== 'undefined') {
-      // Google Sheets 실패 시 로컬 data_wr.js fallback
-      ITEMS_ALL = DATA_WR;
-      ITEMS = [...ITEMS_ALL];
-      showToast('오프라인 모드 - 로컬 데이터 사용');
     } else {
       document.body.innerHTML += '<div style="color:red;padding:40px;font-size:18px">데이터 로드 실패 - 인터넷 연결을 확인하세요</div>';
       return;

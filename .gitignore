@@ -5,3 +5,10 @@
 !.gitignore
 !frequency/
 !frequency/**
+
+# frequency 데이터 파일 제외 (구글시트에서 직접 로드)
+frequency/*.json
+frequency/data_wr.js
+frequency/label_data.js
+frequency/blocklist.js
+frequency/top100_stack_data.js
