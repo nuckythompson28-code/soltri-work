@@ -1,4 +1,4 @@
-# frequency, .gitignore만 GitHub에 유지
+# frequency, clothing, .gitignore만 GitHub에 유지
 # 나머지 전부 제외
 
 *
@@ -7,6 +7,8 @@
 !.github/**
 !frequency/
 !frequency/**
+!clothing/
+!clothing/**
 
 # frequency 데이터 파일 제외 (구글시트에서 직접 로드)
 frequency/*.json
