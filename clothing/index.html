@@ -209,7 +209,12 @@
     <div style="display:flex;gap:6px"><button class="btn bs bp" onclick="saveCfg2()">저장 · 파일 다운로드</button><button class="btn bs bo" onclick="testC()">테스트</button></div>
   </div></div>
   <div class="cd"><div class="ch">📄 PDF 양식</div><div class="cb" id="pCfg"></div></div>
-  <div class="cd"><div class="ch">🗄️ 데이터</div><div class="cb"><button class="btn bs bo" onclick="syncAll()" style="margin-bottom:6px">동기화</button><button class="btn bs bo" onclick="clrC()">캐시 초기화</button></div></div>
+  <div class="cd"><div class="ch">🗄️ 데이터</div><div class="cb">
+    <button class="btn bs bo" onclick="syncAll()" style="margin-bottom:6px">동기화</button>
+    <button class="btn bs bo" onclick="clrC()" style="margin-bottom:6px">캐시 초기화</button>
+    <button class="btn bs bp" onclick="exportAll()">📤 전체 데이터 export (JSON)</button>
+    <p style="font-size:10px;color:var(--tx3);margin-top:6px">SOLTRI 서버 이관용 — 현재 상태를 파일로 다운로드</p>
+  </div></div>
   <div class="cd"><div class="ch">📦 레거시 import</div><div class="cb">
     <p style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">
       과거 지급이력 JSON을 일괄 업로드합니다.<br>재고는 차감되지 않습니다. Apps Script에 백필 핸들러 필요.
@@ -1120,6 +1125,24 @@ function rAdjLog(){
 // ─── STOCK IN ───
 function openSI(){document.getElementById('siIt').innerHTML=items.map(i=>`<option value="${i.id}">${i.name} ${i.size!=='FREE'?'('+i.size+')':''} [재고:${i.stock}]</option>`).join('');document.getElementById('siQ').value=1;oMo('siMo')}
 async function doSI(){const id=document.getElementById('siIt').value;const q=parseInt(document.getElementById('siQ').value)||0;if(q<=0)return;const it=items.find(i=>i.id===id);it.stock+=q;it.totalIn+=q;sv();aP({action:'stockIn',itemId:id,qty:q});rInv();rI();cMo('siMo');T(`${it.name} ${it.size!=='FREE'?'('+it.size+') ':''}${q}개 입고`)}
+
+// ─── EXPORT ALL (SOLTRI 이관용) ───
+function exportAll(){
+  const payload={
+    exportedAt:new Date().toISOString(),
+    source:'google_sheets_via_apps_script',
+    url:URL_,
+    items,hist,pc,depts,emps,adjLog
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const ts=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`clothing_sheets_export_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  T(`export: 품목 ${items.length} · 이력 ${hist.length} · 직원 ${emps.length}`,'var(--grn)');
+}
 
 // ─── LEGACY IMPORT ───
 let lgcyData=null;
