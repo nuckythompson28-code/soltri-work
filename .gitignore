@@ -16,3 +16,9 @@ frequency/data_wr.js
 frequency/label_data.js
 frequency/blocklist.js
 frequency/top100_stack_data.js
+
+# clothing 민감 데이터 제외 (직원 실명 포함) — 로컬에서만 보유
+clothing/작업복_지급내역.md
+clothing/legacy_records.json
+clothing/legacy_issues.md
+clothing/legacy_validation.md

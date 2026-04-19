@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOLTRI 피복 레거시 현황</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0c11;--s1:#111520;--s2:#181d2a;--s3:#212736;--bdr:#262c3e;--acc:#3f7de8;--acc2:#5e9bff;--grn:#1fbc8e;--red:#e85454;--org:#e8a034;--pur:#9676e8;--cyan:#38bdf8;--txt:#dce0eb;--tx2:#848da5;--tx3:#4f576d}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px;padding-bottom:60px}
+  .hdr{background:linear-gradient(160deg,#13243d 0%,var(--bg) 100%);padding:20px;border-radius:14px;margin-bottom:14px;border:1px solid var(--bdr)}
+  .hdr h1{font-size:22px;font-weight:700;background:linear-gradient(90deg,var(--acc2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .hdr p{font-size:12px;color:var(--tx2)}
+  .grid{display:grid;gap:10px}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .stat{background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:14px}
+  .stat-l{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+  .stat-v{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .stat-s{font-size:11px;color:var(--tx2);margin-top:4px}
+  .acc{color:var(--acc2)}.grn{color:var(--grn)}.org{color:var(--org)}.red{color:var(--red)}.pur{color:var(--pur)}.cyan{color:var(--cyan)}
+  .card{background:var(--s1);border:1px solid var(--bdr);border-radius:12px;margin-top:14px;overflow:hidden}
+  .ch{padding:12px 16px;font-weight:600;font-size:14px;border-bottom:1px solid var(--bdr);background:var(--s2);display:flex;justify-content:space-between;align-items:center}
+  .ch small{font-size:11px;color:var(--tx2);font-weight:400}
+  .cb{padding:14px 16px}
+  .bar-row{display:grid;grid-template-columns:70px 1fr 56px;gap:8px;align-items:center;margin-bottom:5px;font-size:11px}
+  .bar-lbl{color:var(--tx2);font-weight:500;text-align:right}
+  .bar-wrap{background:var(--s2);border-radius:4px;height:18px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;transition:width .5s}
+  .bar-val{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--acc2);font-size:11px}
+  .item-colors .bar-fill{background:linear-gradient(90deg,#e85454,#e8a034)}
+  .year-colors .bar-fill{background:linear-gradient(90deg,#1fbc8e,#38bdf8)}
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--bdr)}
+  .srch{flex:1;min-width:180px;position:relative}
+  .srch svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--tx3);width:14px;height:14px}
+  .si{width:100%;padding:8px 10px 8px 30px;background:var(--s2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none}
+  .si:focus{border-color:var(--acc)}
+  .sel{padding:8px 10px;background:var(--s2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none;cursor:pointer}
+  .sel:focus{border-color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:var(--s2);padding:10px 12px;text-align:left;font-weight:600;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:1}
+  td{padding:10px 12px;border-bottom:1px solid var(--bdr)}
+  tr:hover td{background:rgba(63,125,232,.05);cursor:pointer}
+  .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;margin-right:3px}
+  .t-g{background:rgba(31,188,142,.12);color:var(--grn)}
+  .t-r{background:rgba(232,84,84,.12);color:var(--red)}
+  .t-b{background:rgba(63,125,232,.12);color:var(--acc2)}
+  .t-o{background:rgba(232,160,52,.12);color:var(--org)}
+  .t-p{background:rgba(150,118,232,.12);color:var(--pur)}
+  .num{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .mo{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+  .mo.on{display:flex}
+  .modal{background:var(--s1);border:1px solid var(--bdr);border-radius:14px;max-width:700px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+  .mh{padding:14px 16px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center}
+  .mh h3{font-size:16px;font-weight:700}
+  .mh p{font-size:11px;color:var(--tx2);margin-top:2px}
+  .mb{padding:14px 16px;overflow-y:auto;flex:1}
+  .close{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:20px;padding:0 8px}
+  .close:hover{color:var(--red)}
+  .timeline{position:relative;padding-left:22px}
+  .timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--bdr)}
+  .tl-item{position:relative;padding-bottom:14px}
+  .tl-item::before{content:'';position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--acc);border:2px solid var(--bg)}
+  .tl-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--acc2);font-weight:600}
+  .tl-items{margin-top:4px;font-size:12px}
+  .tl-item-row{display:inline-block;background:var(--s2);padding:3px 8px;border-radius:4px;margin:2px 3px 2px 0;font-size:11px}
+  .empty{text-align:center;padding:30px;color:var(--tx3);font-size:13px}
+  .loading{text-align:center;padding:60px 20px;color:var(--tx2);font-size:13px}
+  .loading::after{content:'...';animation:dots 1s steps(4,end) infinite}
+  @keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
+  details summary{cursor:pointer;padding:6px 0;color:var(--tx2);font-size:11px;user-select:none}
+  details[open] summary{color:var(--acc2)}
+  .issues-list{max-height:180px;overflow-y:auto;background:var(--s2);border-radius:6px;padding:8px;margin-top:6px}
+  .issue-row{font-size:10px;color:var(--tx2);padding:3px 0;border-bottom:1px solid var(--bdr);font-family:'JetBrains Mono',monospace}
+  .issue-row:last-child{border-bottom:none}
+  @media(max-width:640px){
+    body{padding:10px;padding-bottom:40px}
+    .stat-v{font-size:20px}
+    .ch{padding:10px 12px;font-size:13px}
+    .cb{padding:10px 12px}
+    th,td{padding:8px 10px;font-size:11px}
+    .bar-row{grid-template-columns:60px 1fr 48px}
+  }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>SOLTRI 피복 레거시 현황</h1>
+  <p>작업복_지급내역.md → legacy_records.json 시각화 · <span class="num" id="srcInfo">로딩중</span></p>
+</div>
+
+<div id="app">
+  <div class="loading">데이터 로딩</div>
+</div>
+
+<!-- 직원 상세 모달 -->
+<div class="mo" id="empMo">
+  <div class="modal">
+    <div class="mh">
+      <div>
+        <h3 id="empName"></h3>
+        <p id="empInfo"></p>
+      </div>
+      <button class="close" onclick="closeEmp()">×</button>
+    </div>
+    <div class="mb" id="empBody"></div>
+  </div>
+</div>
+
+<script>
+const CAT_COLOR = {
+  '동 점퍼':'#e85454','동 바지':'#e85454','동 조끼':'#e85454',
+  '춘추 점퍼':'#e8a034','춘추 티':'#e8a034','춘추 바지':'#e8a034',
+  '하복 티':'#38bdf8','하복 바지':'#38bdf8',
+  '4인치 안전화':'#1fbc8e','6인치 안전화':'#1fbc8e',
+  '깔창':'#9676e8','덮개':'#9676e8','보안경':'#9676e8','앞치마':'#9676e8'
+};
+const CAT_NAME = {
+  '동복':['동 점퍼','동 바지','동 조끼'],
+  '춘추복':['춘추 점퍼','춘추 티','춘추 바지'],
+  '하복':['하복 티','하복 바지'],
+  '안전화':['4인치 안전화','6인치 안전화'],
+  '보호구':['깔창','덮개','보안경','앞치마']
+};
+
+let DATA = null;
+let EMPS = [];  // [{name, dept, retired, count, years, items, records}]
+let FILTERED = [];
+
+async function load(){
+  try{
+    const r = await fetch('legacy_records.json?t='+Date.now());
+    if(!r.ok) throw new Error('legacy_records.json 로드 실패 ('+r.status+')');
+    DATA = await r.json();
+    process();
+    render();
+  }catch(e){
+    document.getElementById('app').innerHTML = `
+      <div class="card"><div class="cb">
+        <div style="color:var(--red);font-weight:600;margin-bottom:6px">⚠ 데이터 로드 실패</div>
+        <div style="font-size:12px;color:var(--tx2)">${e.message}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:10px">
+          이 페이지는 legacy_records.json과 같은 폴더에서 열어야 합니다.<br>
+          또는 local server가 필요할 수 있습니다:<br>
+          <code style="background:var(--s2);padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">python -m http.server 8000</code>
+        </div>
+      </div></div>`;
+  }
+}
+
+function process(){
+  const map = new Map();
+  DATA.records.forEach(r=>{
+    if(!map.has(r.empName)){
+      map.set(r.empName, {name:r.empName, dept:r.dept||'', retired:r.retired, count:0, years:new Set(), items:new Set(), records:[]});
+    }
+    const e = map.get(r.empName);
+    e.count++;
+    e.years.add(r.date.substring(0,4));
+    e.items.add(r.item);
+    e.records.push(r);
+    if(r.retired) e.retired = true;
+  });
+  EMPS = Array.from(map.values()).map(e=>({
+    ...e,
+    years:Array.from(e.years).sort(),
+    items:Array.from(e.items).sort(),
+    minYear:Math.min(...Array.from(e.years).map(Number)),
+    maxYear:Math.max(...Array.from(e.years).map(Number))
+  })).sort((a,b)=>b.count-a.count);
+  FILTERED = EMPS;
+}
+
+function render(){
+  document.getElementById('srcInfo').textContent =
+    `${DATA.records.length.toLocaleString()}건 · ${DATA.stats.unique_employees}명`;
+
+  const stats = DATA.stats;
+  const byYear = stats.by_year;
+  const byItem = stats.by_item;
+  const years = Object.keys(byYear).sort();
+  const maxItem = Math.max(...Object.values(byItem));
+  const maxYear = Math.max(...Object.values(byYear));
+
+  const activeCount = EMPS.filter(e=>!e.retired).length;
+  const retiredCount = EMPS.filter(e=>e.retired).length;
+
+  document.getElementById('app').innerHTML = `
+    <div class="grid g4">
+      <div class="stat">
+        <div class="stat-l">총 지급건수</div>
+        <div class="stat-v acc">${DATA.records.length.toLocaleString()}</div>
+        <div class="stat-s">${years[0]} ~ ${years[years.length-1]} (${years.length}년치)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-l">직원 수</div>
+        <div class="stat-v grn">${DATA.stats.unique_employees}</div>
+        <div class="stat-s">재직 ${activeCount} · 퇴사 ${retiredCount}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-l">퇴사자 레코드</div>
+        <div class="stat-v org">${DATA.stats.retired_records}</div>
+        <div class="stat-s">${Math.round(DATA.stats.retired_records/DATA.records.length*100)}% 비중</div>
+      </div>
+      <div class="stat">
+        <div class="stat-l">품목 종류</div>
+        <div class="stat-v pur">${Object.keys(byItem).length}</div>
+        <div class="stat-s">${Object.keys(CAT_NAME).length}개 카테고리</div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card">
+        <div class="ch">📅 연도별 지급 <small>${years.length}개 연도</small></div>
+        <div class="cb year-colors">
+          ${years.map(y=>{
+            const v = byYear[y];
+            const pct = (v/maxYear*100).toFixed(1);
+            return `<div class="bar-row">
+              <div class="bar-lbl">${y}</div>
+              <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+              <div class="bar-val">${v}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch">📦 품목별 지급 <small>${Object.keys(byItem).length}종</small></div>
+        <div class="cb">
+          ${Object.entries(byItem).map(([k,v])=>{
+            const pct = (v/maxItem*100).toFixed(1);
+            const color = CAT_COLOR[k] || 'var(--acc)';
+            return `<div class="bar-row">
+              <div class="bar-lbl" style="text-align:left;padding-left:4px">${k}</div>
+              <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+              <div class="bar-val">${v}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="ch">📊 카테고리별 건수 · 연도 추이
+        <small>${Object.keys(CAT_NAME).length}개 카테고리</small>
+      </div>
+      <div class="cb">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          ${Object.entries(CAT_NAME).map(([cat,items])=>{
+            const count = items.reduce((s,i)=>s+(byItem[i]||0),0);
+            const color = CAT_COLOR[items[0]] || 'var(--acc)';
+            return `<div style="background:var(--s2);padding:12px;border-radius:8px;border-left:3px solid ${color}">
+              <div style="font-size:10px;color:var(--tx2);text-transform:uppercase;font-weight:600">${cat}</div>
+              <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${color};margin-top:4px">${count}</div>
+              <div style="font-size:10px;color:var(--tx3);margin-top:4px">${items.map(i=>`${i}(${byItem[i]||0})`).join(' · ')}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="ch">👥 직원별 지급 현황 <small id="empCnt">${EMPS.length}명</small></div>
+      <div class="toolbar">
+        <div class="srch">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input class="si" id="empSrch" placeholder="이름 검색" oninput="filterEmp()">
+        </div>
+        <select class="sel" id="statusFilter" onchange="filterEmp()">
+          <option value="all">전체 (${EMPS.length})</option>
+          <option value="active">재직 (${activeCount})</option>
+          <option value="retired">퇴사 (${retiredCount})</option>
+        </select>
+        <select class="sel" id="sortBy" onchange="filterEmp()">
+          <option value="count">지급건수순</option>
+          <option value="name">이름순</option>
+          <option value="first">첫 지급 오래된순</option>
+          <option value="last">최근 지급순</option>
+        </select>
+      </div>
+      <div style="max-height:500px;overflow-y:auto">
+        <table>
+          <thead><tr>
+            <th>이름</th><th>부서</th><th style="text-align:right">건수</th>
+            <th>기간</th><th>품목</th><th>상태</th>
+          </tr></thead>
+          <tbody id="empTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="ch">⚠️ 인제스트 이슈</div>
+      <div class="cb">
+        <p style="font-size:11px;color:var(--tx2);margin-bottom:8px">
+          파싱 시 발견된 데이터 품질 이슈입니다. 원본 엑셀 확인 후 수동 보정 권장.
+        </p>
+        <details open>
+          <summary>상세 보기</summary>
+          <div class="issues-list" id="issuesList">
+            <div style="color:var(--tx3);font-size:11px">legacy_issues.md 파일을 별도로 확인하세요.</div>
+          </div>
+        </details>
+      </div>
+    </div>
+  `;
+
+  renderEmpTable();
+}
+
+function filterEmp(){
+  const q = (document.getElementById('empSrch').value||'').toLowerCase();
+  const sf = document.getElementById('statusFilter').value;
+  const sb = document.getElementById('sortBy').value;
+  FILTERED = EMPS.filter(e=>{
+    if(q && !e.name.toLowerCase().includes(q) && !(e.dept||'').toLowerCase().includes(q)) return false;
+    if(sf==='active' && e.retired) return false;
+    if(sf==='retired' && !e.retired) return false;
+    return true;
+  });
+  if(sb==='count') FILTERED.sort((a,b)=>b.count-a.count);
+  else if(sb==='name') FILTERED.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  else if(sb==='first') FILTERED.sort((a,b)=>a.minYear-b.minYear);
+  else if(sb==='last') FILTERED.sort((a,b)=>b.maxYear-a.maxYear);
+  document.getElementById('empCnt').textContent = `${FILTERED.length}명 / ${EMPS.length}명`;
+  renderEmpTable();
+}
+
+function renderEmpTable(){
+  const tb = document.getElementById('empTbody');
+  if(!FILTERED.length){
+    tb.innerHTML = '<tr><td colspan="6" class="empty">결과 없음</td></tr>';
+    return;
+  }
+  tb.innerHTML = FILTERED.map(e=>`
+    <tr onclick="showEmp('${e.name.replace(/'/g,"\\'")}')">
+      <td style="font-weight:600">${e.name}</td>
+      <td style="color:var(--tx2)">${e.dept || '-'}</td>
+      <td class="num" style="text-align:right">${e.count}</td>
+      <td style="color:var(--tx2);font-size:11px">${e.minYear}~${e.maxYear} (${e.years.length}년)</td>
+      <td style="font-size:10px">${e.items.slice(0,3).map(i=>`<span class="tag t-b">${i}</span>`).join('')}${e.items.length>3?`<span class="tag t-o">+${e.items.length-3}</span>`:''}</td>
+      <td>${e.retired?'<span class="tag t-r">퇴사</span>':'<span class="tag t-g">재직</span>'}</td>
+    </tr>`).join('');
+}
+
+function showEmp(name){
+  const e = EMPS.find(x=>x.name===name);
+  if(!e) return;
+  document.getElementById('empName').textContent = e.name;
+  document.getElementById('empInfo').textContent =
+    `${e.dept||'부서 정보 없음'} · ${e.count}건 지급 · ${e.minYear}~${e.maxYear} · ${e.retired?'퇴사자':'재직'}`;
+
+  // 날짜순 정렬 + 같은 날짜끼리 그룹
+  const byDate = {};
+  e.records.forEach(r=>{
+    if(!byDate[r.date]) byDate[r.date] = [];
+    byDate[r.date].push(r);
+  });
+  const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a)); // 최신순
+
+  // 품목 누적 집계
+  const itemSum = {};
+  e.records.forEach(r=>{
+    const k = r.item + (r.size?` (${r.size})`:'');
+    itemSum[k] = (itemSum[k]||0) + r.qty;
+  });
+
+  document.getElementById('empBody').innerHTML = `
+    <div style="background:var(--s2);padding:12px;border-radius:8px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--acc2);font-weight:600;margin-bottom:6px">품목별 누적 지급</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${Object.entries(itemSum).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+          `<span style="background:var(--s3);padding:4px 9px;border-radius:4px;font-size:11px">
+            <b>${k}</b> <span class="num" style="color:var(--acc2);margin-left:4px">×${v}</span>
+          </span>`
+        ).join('')}
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--acc2);font-weight:600;margin-bottom:10px">타임라인 (${dates.length}개 지급일)</div>
+    <div class="timeline">
+      ${dates.map(d=>{
+        const recs = byDate[d];
+        const year = d.substring(0,4);
+        return `<div class="tl-item">
+          <div class="tl-date">${d} <span style="color:var(--tx3)">· ${year}년</span></div>
+          <div class="tl-items">
+            ${recs.map(r=>`<span class="tl-item-row">
+              <span style="color:${CAT_COLOR[r.item]||'var(--acc2)'}">●</span> ${r.item}${r.size?` <b>${r.size}</b>`:''} <span style="color:var(--acc2)">×${r.qty}</span>
+            </span>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('empMo').classList.add('on');
+}
+
+function closeEmp(){
+  document.getElementById('empMo').classList.remove('on');
+}
+
+document.getElementById('empMo').addEventListener('click',e=>{
+  if(e.target.id==='empMo') closeEmp();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeEmp();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -210,6 +210,18 @@
   </div></div>
   <div class="cd"><div class="ch">📄 PDF 양식</div><div class="cb" id="pCfg"></div></div>
   <div class="cd"><div class="ch">🗄️ 데이터</div><div class="cb"><button class="btn bs bo" onclick="syncAll()" style="margin-bottom:6px">동기화</button><button class="btn bs bo" onclick="clrC()">캐시 초기화</button></div></div>
+  <div class="cd"><div class="ch">📦 레거시 import</div><div class="cb">
+    <p style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">
+      과거 지급이력 JSON을 일괄 업로드합니다.<br>재고는 차감되지 않습니다. Apps Script에 백필 핸들러 필요.
+    </p>
+    <input type="file" id="lgcyFile" accept=".json" style="width:100%;padding:7px;font-size:11px;background:var(--s2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-family:inherit;margin-bottom:8px">
+    <div id="lgcyPreview" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn bs bo" onclick="lgcyAnalyze()" style="flex:1">📊 분석</button>
+      <button class="btn bs bp" onclick="lgcyImport()" style="flex:1" id="lgcyBtn" disabled>▶ 일괄 전송</button>
+    </div>
+    <div id="lgcyProgress" style="margin-top:8px"></div>
+  </div></div>
 </div>
 
 <!-- MODALS -->
@@ -1108,6 +1120,83 @@ function rAdjLog(){
 // ─── STOCK IN ───
 function openSI(){document.getElementById('siIt').innerHTML=items.map(i=>`<option value="${i.id}">${i.name} ${i.size!=='FREE'?'('+i.size+')':''} [재고:${i.stock}]</option>`).join('');document.getElementById('siQ').value=1;oMo('siMo')}
 async function doSI(){const id=document.getElementById('siIt').value;const q=parseInt(document.getElementById('siQ').value)||0;if(q<=0)return;const it=items.find(i=>i.id===id);it.stock+=q;it.totalIn+=q;sv();aP({action:'stockIn',itemId:id,qty:q});rInv();rI();cMo('siMo');T(`${it.name} ${it.size!=='FREE'?'('+it.size+') ':''}${q}개 입고`)}
+
+// ─── LEGACY IMPORT ───
+let lgcyData=null;
+async function lgcyAnalyze(){
+  const f=document.getElementById('lgcyFile').files[0];
+  if(!f){T('파일 선택 필요','var(--red)');return;}
+  try{
+    const txt=await f.text();
+    const d=JSON.parse(txt);
+    if(!d.records||!Array.isArray(d.records))throw new Error('records 배열 없음');
+    lgcyData=d;
+    const years={};d.records.forEach(r=>{const y=r.date.substring(0,4);years[y]=(years[y]||0)+1;});
+    const ys=Object.keys(years).sort();
+    const byItem=d.stats?.by_item||{};
+    const topItems=Object.entries(byItem).slice(0,4).map(([k,v])=>`${k}(${v})`).join(' · ');
+    const retired=d.records.filter(r=>r.retired).length;
+    document.getElementById('lgcyPreview').innerHTML=`<div style="background:var(--s2);padding:10px;border-radius:8px;font-size:11px;line-height:1.6">
+      <div style="color:var(--acc2);font-weight:600">✓ ${d.records.length.toLocaleString()}건 · ${d.stats?.unique_employees||'?'}명</div>
+      <div style="color:var(--tx2);margin-top:2px">기간: ${ys[0]}~${ys[ys.length-1]} · 퇴사자 ${retired}건</div>
+      <div style="color:var(--tx3);margin-top:2px;font-size:10px">${topItems}</div>
+    </div>`;
+    document.getElementById('lgcyBtn').disabled=false;
+  }catch(e){
+    T('파일 오류: '+e.message,'var(--red)');
+    document.getElementById('lgcyPreview').innerHTML='';
+    document.getElementById('lgcyBtn').disabled=true;
+  }
+}
+async function lgcyImport(){
+  if(!lgcyData||!URL_){T('URL 미설정','var(--red)');return;}
+  const total=lgcyData.records.length;
+  if(!confirm(`${total}건을 서버로 전송합니다.\n재고는 변경되지 않습니다.\n계속할까요?`))return;
+  const btn=document.getElementById('lgcyBtn');
+  btn.disabled=true;
+  const prog=document.getElementById('lgcyProgress');
+  const BATCH=50;
+  let done=0,okCount=0,failed=[];
+  const startT=Date.now();
+  for(let i=0;i<total;i+=BATCH){
+    const chunk=lgcyData.records.slice(i,i+BATCH);
+    const pct=Math.round(done/total*100);
+    const elapsed=((Date.now()-startT)/1000).toFixed(1);
+    prog.innerHTML=`<div style="background:var(--s2);padding:10px;border-radius:8px;font-size:11px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span>전송 중... <b style="color:var(--acc2)">${done}/${total}</b></span>
+        <span style="color:var(--tx2)">${elapsed}s</span>
+      </div>
+      <div style="background:var(--s3);height:6px;border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:.3s"></div>
+      </div>
+      ${failed.length?`<div style="color:var(--red);margin-top:4px">실패 ${failed.length}건</div>`:''}
+    </div>`;
+    try{
+      const res=await aP({action:'distributeBackfillBatch',records:chunk});
+      if(!res){failed.push(...chunk.map(r=>({id:r.id,error:'network'})));}
+      else if(res.error){failed.push(...chunk.map(r=>({id:r.id,error:res.error})));}
+      else{
+        okCount+=(res.success?res.success.length:chunk.length);
+        if(res.failed&&Array.isArray(res.failed))failed.push(...res.failed);
+      }
+    }catch(e){failed.push(...chunk.map(r=>({id:r.id,error:e.message||'unknown'})));}
+    done+=chunk.length;
+  }
+  const elapsed=((Date.now()-startT)/1000).toFixed(1);
+  const isFullOk=failed.length===0;
+  prog.innerHTML=`<div style="background:var(--s2);padding:10px;border-radius:8px;font-size:11px">
+    <div style="color:${isFullOk?'var(--grn)':'var(--org)'};font-weight:600;font-size:12px">
+      ${isFullOk?'✓ 완료':'⚠ 완료 (일부 실패)'} · <span style="color:var(--tx2);font-weight:400">${elapsed}s</span>
+    </div>
+    <div style="margin-top:4px">성공 <b style="color:var(--grn)">${okCount}</b> / 실패 <b style="color:var(--red)">${failed.length}</b> / 총 ${total}</div>
+    ${failed.length?`<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--tx2);font-size:10px">실패 상세</summary>
+      <pre style="max-height:120px;overflow:auto;margin-top:4px;font-size:9px;background:var(--s3);padding:6px;border-radius:4px;white-space:pre-wrap">${failed.slice(0,50).map(f=>`${f.id}: ${f.error}`).join('\n')}${failed.length>50?`\n...(+${failed.length-50}건)`:''}</pre>
+    </details>`:''}
+  </div>`;
+  if(okCount>0){T(`${okCount}건 import 완료`,'var(--grn)');setTimeout(syncAll,1000);}
+  btn.disabled=false;
+}
 
 // ─── PDF CONFIG ───
 function rPC(){const el=document.getElementById('pCfg');if(!Object.keys(pc).length)return;
