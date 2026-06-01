@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23eab308'/><text x='50%25' y='62%25' font-size='38' font-family='Segoe UI,Apple SD Gothic Neo,sans-serif' font-weight='700' text-anchor='middle' fill='white'>%E6%A8%99</text></svg>">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Soltri 라벨이력 조회</title>
@@ -257,6 +258,11 @@ function doSearch() {
     searchChisu = d1 || d2;
   }
 
+  // 최근 100일 컷오프 (발송일 기준)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 100);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
   // 필터링
   const results = ALL_DATA.filter(r => {
     // 치수 매칭 (부분 매칭)
@@ -265,8 +271,10 @@ function doSearch() {
     const exactMatch = r.chisu === searchChisu;
     // 소재 매칭
     const matMatch = !mat || (r.jaejil && r.jaejil.startsWith(mat));
+    // 발송일 100일 이내
+    const dateMatch = r.ship_date && r.ship_date >= cutoffStr;
 
-    return (exactMatch || chisuMatch) && matMatch;
+    return (exactMatch || chisuMatch) && matMatch && dateMatch;
   });
 
   // 발송일 기준 최신순 정렬
@@ -353,7 +361,7 @@ function renderResults(results, chisu, mat) {
     </div>
   `;
 
-  // 추천 생산량 계산 (총주문량 - 100일간 평균)
+  // 추천 생산량 계산 (최근 100일 총주문량 - 현재고)
   const avgQty = results.length > 0 ? Math.round(totalQty / results.length) : 0;
   const stk = stockInfo.length > 0 && stockInfo[0].stock >= 0 ? stockInfo[0].stock : 0;
   const suggestRaw = Math.max(0, totalQty - stk);
@@ -363,9 +371,9 @@ function renderResults(results, chisu, mat) {
   // 이력 카드
   histCount.textContent = results.length + '건';
   histScroll.innerHTML = `<div class="suggest-box">
-      <div class="sg-label">최대 생산 추천량</div>
+      <div class="sg-label">최대 생산 추천량 <span style="font-size:11px;font-weight:600;color:#94a3b8">(최근 100일)</span></div>
       <div class="sg-value">${suggestCeil}개</div>
-      <div class="sg-detail">총주문 ${totalQty}개 − 현재고 ${stk}개 = ${suggestRaw}개${suggestRaw > 500 ? ' → 최대 500개 제한' : ''} (10단위 올림)</div>
+      <div class="sg-detail">100일 총주문 ${totalQty}개 − 현재고 ${stk}개 = ${suggestRaw}개${suggestRaw > 500 ? ' → 최대 500개 제한' : ''} (10단위 올림)</div>
     </div>` + results.map(r => `<div class="hist-card">
     <div class="hist-line1">
       <span class="h-date">${r.ship_date || '-'}</span>
